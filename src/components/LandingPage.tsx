@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Mic, Star, Truck, Shield, Headphones, ArrowRight, ChevronDown, Search, Heart, TrendingUp, Award, ChevronLeft, ChevronRight, Mail, User } from 'lucide-react';
+import { ShoppingBag, Mic, Star, Truck, Shield, Headphones, ArrowRight, ChevronDown, Search, Heart, TrendingUp, Award, ChevronLeft, ChevronRight, Mail } from 'lucide-react';
 import { supabase, Product } from '../lib/supabase';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
@@ -7,7 +7,7 @@ import { voiceService } from '../lib/voiceService';
 import toast from 'react-hot-toast';
 
 interface LandingPageProps {
-  onNavigation: (view: 'products' | 'product-detail' | 'cart' | 'checkout' | 'orders' | 'profile' | 'settings' | 'about' | 'contact' | 'deals' | 'whats-new' | 'login' | 'register') => void;
+  onNavigation: (view: 'products' | 'product-detail' | 'cart' | 'checkout' | 'orders' | 'profile' | 'settings' | 'about' | 'contact' | 'deals' | 'privacy' | 'terms' | 'refund' | 'faq') => void;
 }
 
 export function LandingPage({ onNavigation }: LandingPageProps) {
@@ -383,29 +383,7 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
 
   return (
     <div className="bg-[#f0faff]">
-      {/* Top Bar */}
-      <div className="bg-[#12131A] text-white py-2">
-        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center text-sm">
-          <div className="flex items-center space-x-4">
-            <span>📞 +001234567890</span>
-            <span>Get 50% Off on Selected Items | Shop Now</span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <select className="bg-transparent border-none text-white text-sm focus:outline-none">
-              <option>Eng</option>
-              <option>Esp</option>
-              <option>Fra</option>
-            </select>
-            <select className="bg-transparent border-none text-white text-sm focus:outline-none">
-              <option>US</option>
-              <option>CA</option>
-              <option>UK</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Header */}
+      {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-16">
@@ -447,12 +425,6 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
                 onClick={() => onNavigation('deals')}
               >
                 Deals
-              </button>
-              <button 
-                className="text-gray-700 hover:text-[#FF0076] transition-colors"
-                onClick={() => onNavigation('whats-new')}
-              >
-                What's New
               </button>
             </nav>
 
