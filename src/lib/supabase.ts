@@ -189,15 +189,20 @@ export const getProductsWithDetails = async (filters?: {
       brand:brands(*),
       images:product_images(*)
     `)
-    .gte('stock_quantity', 1)
-    .order('created_at', { ascending: false });
+    .gte('stock_quantity', 1);
 
   if (filters?.category && filters.category !== 'all') {
     query = query.eq('category', filters.category);
   }
 
   if (filters?.search) {
-    query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+    const searchTerm = filters.search.toLowerCase();
+    
+    // Improved search query with prioritized matches
+    // First get products with name exact match or contains searchTerm, brand name match, or searchTerm in voice_keywords
+    query = query.or(
+      `name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,voice_keywords.cs.{${searchTerm}}`
+    );
   }
 
   if (filters?.limit) {

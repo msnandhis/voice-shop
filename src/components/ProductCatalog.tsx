@@ -106,25 +106,76 @@ export function ProductCatalog({ searchQuery, category, products: externalProduc
         product.rating >= minRating
       );
 
-      // Apply sorting
-      switch (sortBy) {
-        case 'price-low':
-          productsData.sort((a, b) => a.price - b.price);
-          break;
-        case 'price-high':
-          productsData.sort((a, b) => b.price - a.price);
-          break;
-        case 'rating':
-          productsData.sort((a, b) => b.rating - a.rating);
-          break;
-        case 'newest':
-          productsData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-          break;
-        case 'name':
-          productsData.sort((a, b) => a.name.localeCompare(b.name));
-          break;
-        default:
-          productsData.sort((a, b) => b.rating - a.rating);
+      // Special handling for search terms to prioritize exact matches
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        
+        // Define relevance scoring for each product
+        productsData = productsData.map(product => {
+          let relevanceScore = 0;
+          
+          // Exact match in product name is highest priority (case insensitive)
+          if (product.name.toLowerCase() === searchLower) {
+            relevanceScore += 1000;
+          }
+          // Product name starts with search term
+          else if (product.name.toLowerCase().startsWith(searchLower)) {
+            relevanceScore += 500;
+          }
+          // Product name contains search term
+          else if (product.name.toLowerCase().includes(searchLower)) {
+            relevanceScore += 300;
+          }
+          
+          // Brand name matches search term
+          if (product.brand && product.brand.name.toLowerCase().includes(searchLower)) {
+            relevanceScore += 200;
+          }
+          
+          // Match in voice_keywords has good priority
+          if (product.voice_keywords && product.voice_keywords.some(kw => 
+            kw.toLowerCase() === searchLower || 
+            kw.toLowerCase().includes(searchLower)
+          )) {
+            relevanceScore += 150;
+          }
+          
+          // Match in description has lowest priority
+          if (product.description && product.description.toLowerCase().includes(searchLower)) {
+            relevanceScore += 50;
+          }
+          
+          return {
+            ...product,
+            relevanceScore
+          };
+        });
+        
+        // Sort by relevance score (highest first)
+        productsData.sort((a: any, b: any) => b.relevanceScore - a.relevanceScore);
+      }
+      // If no search term, apply regular sorting
+      else {
+        // Apply sorting
+        switch (sortBy) {
+          case 'price-low':
+            productsData.sort((a, b) => a.price - b.price);
+            break;
+          case 'price-high':
+            productsData.sort((a, b) => b.price - a.price);
+            break;
+          case 'rating':
+            productsData.sort((a, b) => b.rating - a.rating);
+            break;
+          case 'newest':
+            productsData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            break;
+          case 'name':
+            productsData.sort((a, b) => a.name.localeCompare(b.name));
+            break;
+          default:
+            productsData.sort((a, b) => b.rating - a.rating);
+        }
       }
 
       console.log('✅ Loaded products:', productsData.length);
