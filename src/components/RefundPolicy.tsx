@@ -1,5 +1,5 @@
 import React from 'react';
-import { RotateCcw, PackageCheck, Clock, CreditCard, Truck, AlertTriangle, ThumbsUp } from 'lucide-react';
+import { RotateCcw, PackageCheck, Clock, CreditCard, Truck, AlertTriangle, ThumbsUp, Mic } from 'lucide-react';
 
 export function RefundPolicy() {
   return (
