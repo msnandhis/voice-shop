@@ -2,19 +2,27 @@ import { serve } from "npm:http/server";
 import Stripe from "npm:stripe@12.12.0";
 import { createClient } from "npm:@supabase/supabase-js@2.38.0";
 
+// Updated CORS headers to specifically allow the Netlify domain
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': '*',  // Allow any origin for now, you can restrict to specific domains later
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 };
 
 serve(async (req) => {
-  // Handle CORS
+  console.log("Request method:", req.method, "URL:", req.url);
+  
+  // Handle CORS preflight requests properly
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    console.log("Handling OPTIONS preflight request");
+    return new Response('ok', { 
+      headers: corsHeaders,
+      status: 200
+    });
   }
 
   try {
+    console.log("Processing POST request");
     const { cartItems, userId, orderId } = await req.json();
 
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
@@ -75,13 +83,17 @@ serve(async (req) => {
       });
     }
 
+    // Get referrer for success/cancel URLs
+    const referrer = req.headers.get('referer') || 'https://voiceshop.netlify.app';
+    console.log("Using referrer for redirect URLs:", referrer);
+
     // Create Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
-      success_url: `${req.headers.get('referer')}?status=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get('referer')}?status=cancel`,
+      success_url: `${referrer}?status=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${referrer}?status=cancel`,
       metadata: {
         userId: userId,
         orderId: orderId || '', // Include if we're paying for an existing order
@@ -114,21 +126,22 @@ serve(async (req) => {
       }
     }
 
+    console.log("Created Stripe session:", session.id, "with URL:", session.url);
     return new Response(
       JSON.stringify({ success: true, sessionId: session.id, url: session.url }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
-    )
+    );
   } catch (error) {
-    console.error('Stripe checkout session creation error:', error)
+    console.error('Stripe checkout session creation error:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       }
-    )
+    );
   }
 });
