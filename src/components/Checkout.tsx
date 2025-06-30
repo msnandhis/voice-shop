@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Lock, CheckCircle, ArrowLeft, MapPin, User, Package, Calendar, Calendar as CardIcon, XCircle, AlertCircle } from 'lucide-react';
+import { CreditCard, Lock, CheckCircle, ArrowLeft, MapPin, User, Package, Calendar, Calendar as CardIcon, XCircle } from 'lucide-react';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
 import { useSavedAddresses } from '../hooks/useSavedAddresses';
@@ -45,7 +45,6 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
     zipCode: '',
     phone: ''
   });
-  const [creatingOrderWithoutPayment, setCreatingOrderWithoutPayment] = useState(false);
   
   // Check if Stripe is properly configured
   if (!stripePublishableKey) {
@@ -192,8 +191,6 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
     setProcessing(true);
     
     try {
-      console.log("Processing order completion with session ID:", sessionId);
-      
       // Get the shipping address from the completed Checkout Session
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-webhook-handler`, {
         method: 'POST',
@@ -208,23 +205,19 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
       });
       
       if (!response.ok) {
-        console.error("Error response from webhook handler:", response.status, response.statusText);
         throw new Error('Failed to verify payment session');
       }
       
-      const responseData = await response.json();
-      console.log("Response from webhook handler:", responseData);
+      const sessionData = await response.json();
       
-      if (!responseData.success) {
-        throw new Error('Payment verification failed: ' + (responseData.error || 'Unknown error'));
+      if (!sessionData.success) {
+        throw new Error('Payment verification failed');
       }
       
-      const sessionData = responseData.session;
-      
-      const shippingAddress = sessionData.shipping?.address;
-      const customerName = sessionData.shipping?.name;
-      const customerEmail = sessionData.customer_details?.email;
-      const amountTotal = sessionData.amount_total / 100; // Convert from cents
+      const shippingAddress = sessionData.session.shipping?.address;
+      const customerName = sessionData.session.shipping?.name;
+      const customerEmail = sessionData.session.customer_details?.email;
+      const amountTotal = sessionData.session.amount_total / 100; // Convert from cents
       
       // Format name into first and last name
       let firstName = '';
@@ -234,226 +227,33 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
         const nameParts = customerName.split(' ');
         firstName = nameParts[0];
         lastName = nameParts.slice(1).join(' ');
-      } else if (userProfile?.full_name) {
-        const nameParts = userProfile.full_name.split(' ');
-        firstName = nameParts[0];
-        lastName = nameParts.slice(1).join(' ');
       }
       
       // Create formatted address for database
       const formattedAddress = {
-        first_name: firstName || '',
-        last_name: lastName || '',
+        first_name: firstName || userProfile?.full_name?.split(' ')[0] || '',
+        last_name: lastName || userProfile?.full_name?.split(' ').slice(1).join(' ') || '',
         address_line_1: shippingAddress?.line1 || '',
         address_line_2: shippingAddress?.line2 || '',
         city: shippingAddress?.city || '',
         state: shippingAddress?.state || '',
         zip_code: shippingAddress?.postal_code || '',
         country: shippingAddress?.country || 'US',
-        phone: sessionData.customer_details?.phone || ''
+        phone: sessionData.session.customer_details?.phone || ''
       };
       
       const trackingNumber = generateTrackingNumber();
       const estimatedDelivery = getEstimatedDelivery();
 
-      console.log("Creating order with data:", {
-        user_id: userProfile?.id,
-        total_amount: amountTotal,
-        shipping_address: formattedAddress
-      });
-
-      // Check if this is for an existing order (from metadata)
-      const existingOrderId = sessionData.metadata?.orderId;
-      
-      if (existingOrderId) {
-        console.log("Updating existing order:", existingOrderId);
-        
-        // Update the existing order
-        const { data: updatedOrder, error: updateError } = await supabase
-          .from('orders')
-          .update({
-            payment_status: 'completed',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingOrderId)
-          .select()
-          .single();
-          
-        if (updateError) {
-          console.error("Error updating order:", updateError);
-          throw updateError;
-        }
-        
-        console.log("Order updated:", updatedOrder);
-        
-        // Get order items for display
-        const { data: orderItems, error: itemsError } = await supabase
-          .from('order_items')
-          .select(`
-            id, 
-            quantity, 
-            price, 
-            product:products(*)
-          `)
-          .eq('order_id', existingOrderId);
-          
-        if (itemsError) {
-          console.error("Error fetching order items:", itemsError);
-          throw itemsError;
-        }
-        
-        // Save order details for success page
-        setOrderDetails({
-          ...updatedOrder,
-          shippingAddress: formattedAddress,
-          paymentMethod: {
-            card_brand: sessionData.payment_method_types?.[0]?.charAt(0).toUpperCase() + 
-                        sessionData.payment_method_types?.[0]?.slice(1) || 'Credit Card',
-            last_four: '****'
-          },
-          itemCount: orderItems.length,
-          items: orderItems
-        });
-        
-      } else {
-        // Create new order
-        const { data: order, error: orderError } = await supabase
-          .from('orders')
-          .insert({
-            user_id: userProfile?.id,
-            total_amount: amountTotal,
-            status: 'processing',
-            payment_status: 'completed',
-            shipping_address: formattedAddress,
-            tracking_number: trackingNumber,
-            estimated_delivery: estimatedDelivery
-          })
-          .select()
-          .single();
-
-        if (orderError) {
-          console.error("Error creating order:", orderError);
-          throw orderError;
-        }
-
-        console.log("Order created:", order);
-
-        // Create order items
-        const orderItems = cart.map(item => ({
-          order_id: order.id,
-          product_id: item.product_id,
-          quantity: item.quantity,
-          price: item.product?.price || 0
-        }));
-
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(orderItems);
-
-        if (itemsError) {
-          console.error("Error creating order items:", itemsError);
-          throw itemsError;
-        }
-
-        console.log("Order items created:", orderItems.length);
-
-        // Clear cart
-        await clearCart();
-
-        // Save order details for success page
-        setOrderDetails({
-          ...order,
-          shippingAddress: formattedAddress,
-          paymentMethod: {
-            card_brand: sessionData.payment_method_types?.[0]?.charAt(0).toUpperCase() + 
-                        sessionData.payment_method_types?.[0]?.slice(1) || 'Credit Card',
-            last_four: '****'
-          },
-          itemCount: cart.length,
-          items: cart
-        });
-      }
-      
-      setCompleted(true);
-      toast.success('Order placed successfully!');
-      
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-      
-      // Delay completion to give user time to see success screen
-      setTimeout(() => {
-        if (onComplete) onComplete();
-      }, 5000);
-      
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast.error('There was a problem processing your order. Please contact support.');
-      
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const createOrderWithoutPayment = async () => {
-    if (!userProfile) {
-      toast.error('Please sign in to complete your purchase');
-      return;
-    }
-
-    if (!selectedAddress && !useNewAddress) {
-      toast.error('Please select a shipping address');
-      return;
-    }
-
-    setCreatingOrderWithoutPayment(true);
-    
-    try {
-      // Format the shipping address
-      let shippingAddress;
-      
-      if (selectedAddress) {
-        shippingAddress = {
-          first_name: selectedAddress.first_name,
-          last_name: selectedAddress.last_name,
-          address_line_1: selectedAddress.address_line_1,
-          address_line_2: selectedAddress.address_line_2,
-          city: selectedAddress.city,
-          state: selectedAddress.state,
-          zip_code: selectedAddress.zip_code,
-          country: selectedAddress.country,
-          phone: selectedAddress.phone
-        };
-      } else if (useNewAddress) {
-        shippingAddress = {
-          first_name: newAddressData.firstName,
-          last_name: newAddressData.lastName,
-          address_line_1: newAddressData.address,
-          address_line_2: '',
-          city: newAddressData.city,
-          state: newAddressData.state,
-          zip_code: newAddressData.zipCode,
-          country: 'US',
-          phone: newAddressData.phone
-        };
-      } else {
-        throw new Error('No shipping address selected');
-      }
-      
-      const totalAmount = getTotalPrice() * 1.08; // Including 8% tax
-      const trackingNumber = generateTrackingNumber();
-      const estimatedDelivery = getEstimatedDelivery();
-
-      // Create order with pending payment status
+      // Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
-          user_id: userProfile.id,
-          total_amount: totalAmount,
-          status: 'pending',
-          payment_status: 'pending',
-          shipping_address: shippingAddress,
+          user_id: userProfile?.id,
+          total_amount: amountTotal,
+          status: 'processing',
+          payment_status: 'completed',
+          shipping_address: formattedAddress,
           tracking_number: trackingNumber,
           estimated_delivery: estimatedDelivery
         })
@@ -476,90 +276,38 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
 
       if (itemsError) throw itemsError;
 
+      // Clear cart
+      await clearCart();
+
       // Save order details for success page
       setOrderDetails({
         ...order,
-        shippingAddress: shippingAddress,
+        shippingAddress: formattedAddress,
         paymentMethod: {
-          card_brand: 'Pending Payment',
-          last_four: '****'
+          card_brand: sessionData.session.payment_intent?.payment_method_types[0] || 'Credit Card',
+          last_four: sessionData.session.payment_intent?.last4 || '****'
         },
         itemCount: cart.length,
-        items: cart,
-        paymentPending: true
+        items: cart
       });
-      
-      // Clear cart
-      await clearCart();
       
       setCompleted(true);
-      toast.success('Order created! Please complete payment to process your order.');
-
-    } catch (error) {
-      console.error('Order creation error:', error);
-      toast.error('Failed to create order. Please try again.');
-    } finally {
-      setCreatingOrderWithoutPayment(false);
-    }
-  };
-  
-  const handlePayForPendingOrder = async () => {
-    if (!orderDetails?.id) {
-      toast.error('Order information missing');
-      return;
-    }
-    
-    setProcessing(true);
-    
-    try {
-      // Create Stripe Checkout Session for pending order
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-stripe-checkout-session`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          cartItems: orderDetails.items,
-          userId: userProfile?.id,
-          orderId: orderDetails.id  // Pass the existing order ID
-        })
-      });
+      toast.success('Order placed successfully!');
       
-      if (!response.ok) {
-        console.error("Error creating checkout session:", response.status, response.statusText);
-        const errorText = await response.text();
-        console.error("Error details:", errorText);
-        throw new Error(`Failed to create checkout session: ${response.status} - ${errorText}`);
-      }
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
       
-      const data = await response.json();
+      // Delay completion to give user time to see success screen
+      setTimeout(() => {
+        if (onComplete) onComplete();
+      }, 5000);
       
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to create checkout session');
-      }
-      
-      // Redirect to Stripe Checkout
-      const stripe = await stripePromise;
-      if (!stripe) {
-        throw new Error('Stripe failed to initialize');
-      }
-      
-      // Either redirect to the URL or use redirectToCheckout
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        const { error } = await stripe.redirectToCheckout({
-          sessionId: data.sessionId
-        });
-        
-        if (error) {
-          throw error;
-        }
-      }
     } catch (error) {
       console.error('Checkout error:', error);
-      toast.error('Payment failed. Please try again.');
+      toast.error('There was a problem processing your order. Please contact support.');
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
     } finally {
       setProcessing(false);
     }
@@ -599,13 +347,6 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
         })
       });
       
-      if (!response.ok) {
-        console.error("Error creating checkout session:", response.status, response.statusText);
-        const errorText = await response.text();
-        console.error("Error details:", errorText);
-        throw new Error(`Failed to create checkout session: ${response.status} - ${errorText}`);
-      }
-      
       const data = await response.json();
       
       if (!data.success) {
@@ -633,7 +374,6 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
     } catch (error) {
       console.error('Checkout error:', error);
       toast.error('Payment failed. Please try again.');
-    } finally {
       setProcessing(false);
     }
   };
@@ -658,41 +398,12 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
           <div className="mb-8">
             <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
             <h2 className="text-3xl font-bold text-gray-900 mb-3 font-['Quicksand']">
-              {orderDetails.paymentPending 
-                ? "Order Created!" 
-                : "Order Confirmed!"}
+              Order Confirmed!
             </h2>
             <p className="text-gray-600 text-lg mb-6">
-              {orderDetails.paymentPending 
-                ? "Your order has been created but payment is pending. You can complete your payment below." 
-                : "Thank you for your purchase. Your order has been successfully placed and is being processed."}
+              Thank you for your purchase. Your order has been successfully placed and is being processed.
             </p>
           </div>
-          
-          {orderDetails.paymentPending && (
-            <div className="mb-8 bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
-              <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-amber-700 mb-2">Payment Required</h3>
-              <p className="text-amber-700 mb-6">Please complete your payment to process your order.</p>
-              <button
-                onClick={handlePayForPendingOrder}
-                disabled={processing}
-                className="inline-flex items-center justify-center px-8 py-3 bg-[#FF0076] text-white rounded-lg font-semibold hover:bg-[#FF0076]/90 transition-colors shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {processing ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-5 h-5 mr-2" />
-                    Pay Now
-                  </>
-                )}
-              </button>
-            </div>
-          )}
           
           {/* Order Summary */}
           <div className="bg-gradient-to-r from-[#FF0076]/5 to-blue-50 rounded-xl p-8 mb-8 text-left">
@@ -739,14 +450,9 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
                   <CardIcon className="w-6 h-6 text-[#FF0076] mr-3" />
                   <span className="font-medium text-gray-700">Payment Method</span>
                 </div>
-                <div>
-                  <span className="text-gray-900 font-medium">
-                    {orderDetails.paymentMethod.card_brand} •••• {orderDetails.paymentMethod.last_four}
-                  </span>
-                  {orderDetails.paymentPending && (
-                    <span className="ml-2 bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">Pending</span>
-                  )}
-                </div>
+                <span className="text-gray-900 font-medium">
+                  {orderDetails.paymentMethod.card_brand} •••• {orderDetails.paymentMethod.last_four}
+                </span>
               </div>
             </div>
             
@@ -785,9 +491,7 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
                   </span>
                 </div>
                 <p className="text-sm text-gray-600">
-                  {orderDetails.paymentPending 
-                    ? "This is an estimated date. Your order will be processed after payment is completed." 
-                    : "We'll send you updates as your order moves through our fulfillment process."}
+                  We'll send you updates as your order moves through our fulfillment process.
                 </p>
               </div>
               
@@ -821,21 +525,10 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
             <h4 className="font-semibold text-gray-900 mb-3">What's Next?</h4>
             <div className="text-sm text-gray-600 space-y-2">
               <p>📧 You'll receive an email confirmation with your order details</p>
-              <p>📦 {orderDetails.paymentPending 
-                  ? "Once payment is completed, we'll process your order" 
-                  : "We'll notify you when your order ships with tracking information"}</p>
+              <p>📦 We'll notify you when your order ships with tracking information</p>
               <p>🚚 Track your package using the tracking number above</p>
               <p>💬 Try saying "Show me products" to continue shopping!</p>
             </div>
-          </div>
-
-          <div className="mt-8">
-            <button 
-              onClick={onComplete}
-              className="px-6 py-3 bg-gray-200 hover:bg-gray-300 transition-colors rounded-lg text-gray-800 font-medium"
-            >
-              Continue Shopping
-            </button>
           </div>
         </div>
       </div>
@@ -883,6 +576,7 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
               <div>
                 <p className="font-medium">Order:</p>
                 <p>"Place order"</p>
+                
               </div>
             </div>
           </div>
@@ -1121,60 +815,33 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button
-              onClick={handleSubmit}
-              disabled={processing || (!userProfile)}
-              className={`
-                inline-flex items-center justify-center px-6 py-4 font-semibold rounded-lg text-lg
-                transition-all duration-300 transform hover:scale-[1.02]
-                ${processing || (!userProfile)
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-[#FF0076] hover:bg-[#FF0076]/90 shadow-lg hover:shadow-xl'
-                } text-white
-              `}
-            >
-              {processing ? (
-                <>
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Lock className="w-5 h-5 mr-3" />
-                  Pay with Stripe - {formatPrice(finalTotal)}
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={createOrderWithoutPayment}
-              disabled={creatingOrderWithoutPayment || processing || !userProfile || (!selectedAddress && !useNewAddress)}
-              className={`
-                inline-flex items-center justify-center px-6 py-4 font-semibold rounded-lg text-lg
-                transition-all duration-300
-                ${creatingOrderWithoutPayment || processing || !userProfile || (!selectedAddress && !useNewAddress)
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                }
-              `}
-            >
-              {creatingOrderWithoutPayment ? (
-                <>
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-700 mr-3"></div>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Calendar className="w-5 h-5 mr-3" />
-                  Pay Later
-                </>
-              )}
-            </button>
-          </div>
+          <button
+            onClick={handleSubmit}
+            disabled={processing || (!userProfile)}
+            className={`
+              w-full inline-flex items-center justify-center px-6 py-4 font-semibold rounded-lg text-lg
+              transition-all duration-300 transform hover:scale-[1.02]
+              ${processing || (!userProfile)
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-[#FF0076] hover:bg-[#FF0076]/90 shadow-lg hover:shadow-xl'
+              } text-white
+            `}
+          >
+            {processing ? (
+              <>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
+                Processing Your Order...
+              </>
+            ) : (
+              <>
+                <Lock className="w-5 h-5 mr-3" />
+                Pay with Stripe - {formatPrice(finalTotal)}
+              </>
+            )}
+          </button>
           
           <div className="text-center text-sm text-gray-500">
-            <p>💬 Say "Place order" to complete your purchase</p>
+            <p>💬 Say "Place order" or "Pay now" to complete your purchase</p>
           </div>
         </div>
 

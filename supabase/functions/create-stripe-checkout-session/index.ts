@@ -1,57 +1,34 @@
-import { serve } from "npm:http/server";
-import Stripe from "npm:stripe@12.12.0";
-import { createClient } from "npm:@supabase/supabase-js@2.38.0";
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import Stripe from 'https://esm.sh/stripe@12.12.0?target=deno'
 
-// Updated CORS headers to explicitly allow the Netlify domain
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-};
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
 
 serve(async (req) => {
-  // Log all requests to help with debugging
-  console.log(`Request received: ${req.method} ${req.url}`);
-  
-  // Handle CORS preflight requests properly
+  // Handle CORS
   if (req.method === 'OPTIONS') {
-    console.log("Handling OPTIONS preflight request");
-    return new Response(null, { 
-      headers: corsHeaders,
-      status: 200
-    });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    console.log("Processing checkout request");
-    const { cartItems, userId, orderId } = await req.json();
+    const { cartItems, userId } = await req.json()
 
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
       throw new Error('Cart items are required.')
     }
 
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
     if (!stripeSecretKey) {
-      throw new Error('Stripe secret key not configured.');
+      throw new Error('Stripe secret key not configured.')
     }
 
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
       httpClient: Stripe.createFetchHttpClient(),
-    });
-
-    // Supabase client for updating order status if paying for existing order
-    let supabase;
-    if (orderId) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (!supabaseUrl || !supabaseServiceKey) {
-        throw new Error('Supabase credentials not found.');
-      }
-      
-      supabase = createClient(supabaseUrl, supabaseServiceKey);
-    }
+    })
 
     // Construct line items from cart items
     const lineItems = cartItems.map((item) => ({
@@ -65,11 +42,11 @@ serve(async (req) => {
         unit_amount: Math.round(item.product.price * 100), // Price in cents
       },
       quantity: item.quantity,
-    }));
+    }))
 
     // Add a tax line item (8% example)
-    const totalAmountCents = lineItems.reduce((sum, item) => sum + (item.price_data.unit_amount * item.quantity), 0);
-    const taxAmountCents = Math.round(totalAmountCents * 0.08);
+    const totalAmountCents = lineItems.reduce((sum, item) => sum + (item.price_data.unit_amount * item.quantity), 0)
+    const taxAmountCents = Math.round(totalAmountCents * 0.08)
 
     if (taxAmountCents > 0) {
       lineItems.push({
@@ -81,70 +58,40 @@ serve(async (req) => {
           unit_amount: taxAmountCents,
         },
         quantity: 1,
-      });
+      })
     }
 
-    // Get referrer for success/cancel URLs
-    const referrer = req.headers.get('referer') || 'https://voiceshop.netlify.app';
-    console.log(`Using referrer for redirect URLs: ${referrer}`);
-
-    // Create Checkout Session with explicit mode
+    // Create Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
-      success_url: `${referrer}?status=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${referrer}?status=cancel`,
+      success_url: `${req.headers.get('referer')}?status=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.get('referer')}?status=cancel`,
       metadata: {
         userId: userId,
-        orderId: orderId || '', // Include if we're paying for an existing order
       },
       billing_address_collection: 'auto',
       shipping_address_collection: {
         allowed_countries: ['US', 'CA', 'GB', 'AU'],
       },
-    });
+    })
 
-    // If this is for an existing order, update the order record
-    if (orderId && supabase) {
-      try {
-        const { error } = await supabase
-          .from('orders')
-          .update({ 
-            payment_intent_id: session.payment_intent || '',
-            stripe_session_id: session.id,
-            payment_status: 'pending', // Will be updated to 'completed' on successful payment
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', orderId);
-        
-        if (error) {
-          console.error('Error updating order with payment information:', error);
-        } else {
-          console.log(`Updated order ${orderId} with session ID ${session.id}`);
-        }
-      } catch (dbError) {
-        console.error('Database error updating order:', dbError);
-        // Continue despite DB error - the payment can still proceed
-      }
-    }
-
-    console.log(`Created Stripe session: ${session.id} with URL: ${session.url}`);
     return new Response(
       JSON.stringify({ success: true, sessionId: session.id, url: session.url }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
-    );
+    )
   } catch (error) {
-    console.error('Stripe checkout session creation error:', error);
+    console.error('Stripe checkout session creation error:', error)
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       }
-    );
+    )
   }
-});
+})
