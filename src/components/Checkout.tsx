@@ -262,62 +262,117 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
         shipping_address: formattedAddress
       });
 
-      // Create order
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: userProfile?.id,
-          total_amount: amountTotal,
-          status: 'processing',
-          payment_status: 'completed',
-          shipping_address: formattedAddress,
-          tracking_number: trackingNumber,
-          estimated_delivery: estimatedDelivery
-        })
-        .select()
-        .single();
+      // Check if this is for an existing order (from metadata)
+      const existingOrderId = sessionData.metadata?.orderId;
+      
+      if (existingOrderId) {
+        console.log("Updating existing order:", existingOrderId);
+        
+        // Update the existing order
+        const { data: updatedOrder, error: updateError } = await supabase
+          .from('orders')
+          .update({
+            payment_status: 'completed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingOrderId)
+          .select()
+          .single();
+          
+        if (updateError) {
+          console.error("Error updating order:", updateError);
+          throw updateError;
+        }
+        
+        console.log("Order updated:", updatedOrder);
+        
+        // Get order items for display
+        const { data: orderItems, error: itemsError } = await supabase
+          .from('order_items')
+          .select(`
+            id, 
+            quantity, 
+            price, 
+            product:products(*)
+          `)
+          .eq('order_id', existingOrderId);
+          
+        if (itemsError) {
+          console.error("Error fetching order items:", itemsError);
+          throw itemsError;
+        }
+        
+        // Save order details for success page
+        setOrderDetails({
+          ...updatedOrder,
+          shippingAddress: formattedAddress,
+          paymentMethod: {
+            card_brand: sessionData.payment_method_types?.[0]?.charAt(0).toUpperCase() + 
+                        sessionData.payment_method_types?.[0]?.slice(1) || 'Credit Card',
+            last_four: '****'
+          },
+          itemCount: orderItems.length,
+          items: orderItems
+        });
+        
+      } else {
+        // Create new order
+        const { data: order, error: orderError } = await supabase
+          .from('orders')
+          .insert({
+            user_id: userProfile?.id,
+            total_amount: amountTotal,
+            status: 'processing',
+            payment_status: 'completed',
+            shipping_address: formattedAddress,
+            tracking_number: trackingNumber,
+            estimated_delivery: estimatedDelivery
+          })
+          .select()
+          .single();
 
-      if (orderError) {
-        console.error("Error creating order:", orderError);
-        throw orderError;
+        if (orderError) {
+          console.error("Error creating order:", orderError);
+          throw orderError;
+        }
+
+        console.log("Order created:", order);
+
+        // Create order items
+        const orderItems = cart.map(item => ({
+          order_id: order.id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price: item.product?.price || 0
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(orderItems);
+
+        if (itemsError) {
+          console.error("Error creating order items:", itemsError);
+          throw itemsError;
+        }
+
+        console.log("Order items created:", orderItems.length);
+
+        // Clear cart
+        await clearCart();
+
+        // Save order details for success page
+        setOrderDetails({
+          ...order,
+          shippingAddress: formattedAddress,
+          paymentMethod: {
+            card_brand: sessionData.payment_method_types?.[0]?.charAt(0).toUpperCase() + 
+                        sessionData.payment_method_types?.[0]?.slice(1) || 'Credit Card',
+            last_four: '****'
+          },
+          itemCount: cart.length,
+          items: cart
+        });
       }
-
-      console.log("Order created:", order);
-
-      // Create order items
-      const orderItems = cart.map(item => ({
-        order_id: order.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price: item.product?.price || 0
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) {
-        console.error("Error creating order items:", itemsError);
-        throw itemsError;
-      }
-
-      console.log("Order items created:", orderItems.length);
-
-      // Clear cart
-      await clearCart();
-
-      // Save order details for success page
-      setOrderDetails({
-        ...order,
-        shippingAddress: formattedAddress,
-        paymentMethod: {
-          card_brand: sessionData.payment_method_types?.[0]?.charAt(0).toUpperCase() + 
-                      sessionData.payment_method_types?.[0]?.slice(1) || 'Credit Card',
-          last_four: '****'
-        },
-        itemCount: cart.length,
-        items: cart
-      });
       
       setCompleted(true);
       toast.success('Order placed successfully!');
@@ -471,6 +526,13 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
         })
       });
       
+      if (!response.ok) {
+        console.error("Error creating checkout session:", response.status, response.statusText);
+        const errorText = await response.text();
+        console.error("Error details:", errorText);
+        throw new Error(`Failed to create checkout session: ${response.status} - ${errorText}`);
+      }
+      
       const data = await response.json();
       
       if (!data.success) {
@@ -537,6 +599,13 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
         })
       });
       
+      if (!response.ok) {
+        console.error("Error creating checkout session:", response.status, response.statusText);
+        const errorText = await response.text();
+        console.error("Error details:", errorText);
+        throw new Error(`Failed to create checkout session: ${response.status} - ${errorText}`);
+      }
+      
       const data = await response.json();
       
       if (!data.success) {
@@ -564,6 +633,7 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
     } catch (error) {
       console.error('Checkout error:', error);
       toast.error('Payment failed. Please try again.');
+    } finally {
       setProcessing(false);
     }
   };

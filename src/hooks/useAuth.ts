@@ -24,6 +24,7 @@ export function useAuth() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth state changed:", event, !!session);
         setUser(session?.user ?? null);
         setLoading(false);
         if (session?.user) {
@@ -46,6 +47,7 @@ export function useAuth() {
   const loadUserProfile = async (userId: string, retryCount = 0) => {
     setProfileLoading(true);
     try {
+      console.log("Loading user profile for ID:", userId);
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -56,9 +58,11 @@ export function useAuth() {
         console.error('Error loading user profile:', error);
         setUserProfile(null);
       } else if (profile) {
+        console.log("Profile loaded successfully:", profile);
         setUserProfile(profile);
       } else if (retryCount < 3) {
         // Profile might not be created yet by the trigger, retry after a short delay
+        console.log("Profile not found, retrying in 500ms...");
         setTimeout(() => loadUserProfile(userId, retryCount + 1), 500);
         return;
       } else {

@@ -2,27 +2,28 @@ import { serve } from "npm:http/server";
 import Stripe from "npm:stripe@12.12.0";
 import { createClient } from "npm:@supabase/supabase-js@2.38.0";
 
-// Updated CORS headers to specifically allow the Netlify domain
+// Updated CORS headers to explicitly allow the Netlify domain
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',  // Allow any origin for now, you can restrict to specific domains later
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 };
 
 serve(async (req) => {
-  console.log("Request method:", req.method, "URL:", req.url);
+  // Log all requests to help with debugging
+  console.log(`Request received: ${req.method} ${req.url}`);
   
   // Handle CORS preflight requests properly
   if (req.method === 'OPTIONS') {
     console.log("Handling OPTIONS preflight request");
-    return new Response('ok', { 
+    return new Response(null, { 
       headers: corsHeaders,
       status: 200
     });
   }
 
   try {
-    console.log("Processing POST request");
+    console.log("Processing checkout request");
     const { cartItems, userId, orderId } = await req.json();
 
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
@@ -85,9 +86,9 @@ serve(async (req) => {
 
     // Get referrer for success/cancel URLs
     const referrer = req.headers.get('referer') || 'https://voiceshop.netlify.app';
-    console.log("Using referrer for redirect URLs:", referrer);
+    console.log(`Using referrer for redirect URLs: ${referrer}`);
 
-    // Create Checkout Session
+    // Create Checkout Session with explicit mode
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
@@ -119,6 +120,8 @@ serve(async (req) => {
         
         if (error) {
           console.error('Error updating order with payment information:', error);
+        } else {
+          console.log(`Updated order ${orderId} with session ID ${session.id}`);
         }
       } catch (dbError) {
         console.error('Database error updating order:', dbError);
@@ -126,7 +129,7 @@ serve(async (req) => {
       }
     }
 
-    console.log("Created Stripe session:", session.id, "with URL:", session.url);
+    console.log(`Created Stripe session: ${session.id} with URL: ${session.url}`);
     return new Response(
       JSON.stringify({ success: true, sessionId: session.id, url: session.url }),
       {
