@@ -21,6 +21,7 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
   const [email, setEmail] = useState('');
   const [bannerSlides, setBannerSlides] = useState<any[]>([]);
   const [loadingBannerSlides, setLoadingBannerSlides] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const testimonials = [
     {
@@ -346,6 +347,22 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
     }
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    
+    // Store search query in sessionStorage for the ProductCatalog to use
+    sessionStorage.setItem('searchQuery', searchQuery);
+    
+    // Navigate to products page
+    if (typeof window.handleBrowseProducts === 'function') {
+      window.handleBrowseProducts('');
+    }
+    
+    // Reset search input
+    setSearchQuery('');
+  };
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -430,16 +447,21 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
 
             {/* Search Bar */}
             <div className="hidden md:flex items-center flex-1 max-w-md mx-8">
-              <div className="relative w-full">
+              <form className="relative w-full" onSubmit={handleSearch}>
                 <input
                   type="text"
                   placeholder="Search Product"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-4 pr-12 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF0076] focus:border-transparent"
                 />
-                <button className="absolute right-3 top-1/2 transform -translate-y-1/2 hover:text-[#FF0076] transition-colors">
+                <button 
+                  type="submit" 
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 hover:text-[#FF0076] transition-colors"
+                >
                   <Search className="w-5 h-5 text-gray-400" />
                 </button>
-              </div>
+              </form>
             </div>
 
             {/* Actions */}
@@ -507,7 +529,7 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
                             </button>
                           )}
                         </div>
-                      </div>
+                       </div>
                       <div className="relative h-full">
                         <img
                           src={slide.image}
