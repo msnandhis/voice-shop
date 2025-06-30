@@ -269,9 +269,10 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
                   <span>What's New</span>
                 </button>
 
-                {/* User Navigation (only if logged in) */}
-                {user && (
+                {/* User Navigation and Actions */}
+                {user ? (
                   <>
+                    {/* User Navigation Items */}
                     <div className="border-t border-gray-200 pt-4">
                       {userNavItems.map((item) => {
                         const Icon = item.icon;
@@ -298,24 +299,23 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
                         );
                       })}
                     </div>
-                  </>
-                )}
-                
-                {user ? (
-                  <div className="pt-4 border-t border-gray-100">
-                    <div className="flex items-center space-x-2 mb-4">
-                      <User className="w-5 h-5 text-gray-600" />
-                      <span className="text-sm text-gray-700">{user.email}</span>
+
+                    {/* User Account Actions */}
+                    <div className="pt-4 border-t border-gray-100">
+                      <div className="flex items-center space-x-2 mb-4">
+                        <User className="w-5 h-5 text-gray-600" />
+                        <span className="text-sm text-gray-700">{user.email}</span>
+                      </div>
+                      
+                      <button
+                        onClick={handleSignOut}
+                        className="flex items-center text-red-500 hover:text-red-600 transition-colors"
+                      >
+                        <LogOut className="w-5 h-5 mr-2" />
+                        Sign Out
+                      </button>
                     </div>
-                    
-                    <button
-                      onClick={handleSignOut}
-                      className="flex items-center text-red-500 hover:text-red-600 transition-colors"
-                    >
-                      <LogOut className="w-5 h-5 mr-2" />
-                      Sign Out
-                    </button>
-                  </div>
+                  </>
                 ) : (
                   <button
                     onClick={() => {
@@ -333,6 +333,6 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
           )}
         </div>
       </header>
-    </div>
+    </>
   );
 }
