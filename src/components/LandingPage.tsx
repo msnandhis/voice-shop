@@ -286,21 +286,6 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
     onNavigation('product-detail');
   };
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      toast.success('Successfully subscribed to newsletter!');
-      setEmail('');
-    }
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(price);
-  };
-
   const handleBannerProductClick = (slideId: string | null, category: string) => {
     if (slideId) {
       // If we have a product ID, select that product and navigate to product detail
@@ -344,6 +329,21 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
       console.error('Error fetching product:', error);
       onNavigation('products');
     }
+  };
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email) {
+      toast.success('Successfully subscribed to newsletter!');
+      setEmail('');
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(price);
   };
 
   const renderStars = (rating: number) => {
