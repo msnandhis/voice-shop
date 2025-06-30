@@ -1,7 +1,23 @@
 import React from 'react';
 import { Mic } from 'lucide-react';
 
-export function Footer() {
+interface FooterProps {
+  onNavigation?: (view: 'home' | 'products' | 'cart' | 'checkout' | 'orders' | 'profile' | 'settings' | 'about' | 'contact' | 'deals' | 'whats-new' | 'login' | 'register') => void;
+}
+
+export function Footer({ onNavigation }: FooterProps) {
+  const handleNavClick = (view: 'about' | 'contact' | 'deals') => {
+    if (onNavigation) {
+      onNavigation(view);
+    }
+  };
+
+  const handleCategoryClick = (category: string) => {
+    if (typeof window.handleBrowseProducts === 'function') {
+      window.handleBrowseProducts(category);
+    }
+  };
+
   return (
     <footer className="bg-[#12131A] text-white py-12">
       <div className="max-w-7xl mx-auto px-6">
@@ -29,10 +45,10 @@ export function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-4 font-['Quicksand']">Quick Links</h3>
             <ul className="space-y-2">
-              <li><a href="#" onClick={(e) => { e.preventDefault(); window.handleBrowseProducts(''); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Products</a></li>
-              <li><a href="#" onClick={(e) => { e.preventDefault(); window.location.href = "#/about"; }} className="text-gray-300 hover:text-[#FF0076] transition-colors">About Us</a></li>
-              <li><a href="#" onClick={(e) => { e.preventDefault(); window.location.href = "#/contact"; }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Contact</a></li>
-              <li><a href="#" onClick={(e) => { e.preventDefault(); window.location.href = "#/deals"; }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Deals</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); handleCategoryClick(''); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Products</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('about'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">About Us</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('contact'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Contact</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('deals'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Deals</a></li>
             </ul>
           </div>
 
@@ -40,10 +56,10 @@ export function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-4 font-['Quicksand']">Categories</h3>
             <ul className="space-y-2">
-              <li><a href="#" onClick={(e) => { e.preventDefault(); window.handleBrowseProducts('shoes'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Shoes</a></li>
-              <li><a href="#" onClick={(e) => { e.preventDefault(); window.handleBrowseProducts('electronics'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Electronics</a></li>
-              <li><a href="#" onClick={(e) => { e.preventDefault(); window.handleBrowseProducts('clothing'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Clothing</a></li>
-              <li><a href="#" onClick={(e) => { e.preventDefault(); window.handleBrowseProducts('accessories'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Accessories</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); handleCategoryClick('shoes'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Shoes</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); handleCategoryClick('electronics'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Electronics</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); handleCategoryClick('clothing'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Clothing</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); handleCategoryClick('accessories'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Accessories</a></li>
             </ul>
           </div>
         </div>

@@ -21,6 +21,24 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
     setMobileMenuOpen(false);
   };
 
+  const handleNavClick = (itemId: string) => {
+    if (itemId === 'cart' && onCartClick) {
+      onCartClick();
+    } else if (itemId === 'home' && onLogoClick) {
+      onLogoClick();
+    } else if (onNavigation) {
+      onNavigation(itemId as any);
+    }
+    setMobileMenuOpen(false);
+  };
+
+  const handleCategoryClick = (category: string) => {
+    if (typeof window.handleBrowseProducts === 'function') {
+      window.handleBrowseProducts(category);
+      setMobileMenuOpen(false);
+    }
+  };
+
   const publicNavItems = [
     { name: 'Home', id: 'home', icon: Home },
     { name: 'Products', id: 'products', icon: Mic },
@@ -35,16 +53,14 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
     { name: 'Settings', id: 'settings', icon: SettingsIcon }
   ];
 
-  const handleNavClick = (itemId: string) => {
-    if (itemId === 'cart' && onCartClick) {
-      onCartClick();
-    } else if (itemId === 'home' && onLogoClick) {
-      onLogoClick();
-    } else if (onNavigation) {
-      onNavigation(itemId as any);
-    }
-    setMobileMenuOpen(false);
-  };
+  const categories = [
+    { id: 'shoes', name: 'Shoes' },
+    { id: 'electronics', name: 'Electronics' },
+    { id: 'clothing', name: 'Clothing' },
+    { id: 'home', name: 'Home & Garden' },
+    { id: 'fitness', name: 'Fitness' },
+    { id: 'accessories', name: 'Accessories' }
+  ];
 
   return (
     <>
@@ -88,6 +104,27 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
                   <span>Categories</span>
                   <ChevronDown className="w-4 h-4" />
                 </button>
+                <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="p-4 space-y-2">
+                    {categories.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => handleCategoryClick(category.id)}
+                        className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                      >
+                        <span className="text-2xl">{category.id === 'shoes' ? '👟' : 
+                                                    category.id === 'electronics' ? '📱' : 
+                                                    category.id === 'clothing' ? '👕' : 
+                                                    category.id === 'home' ? '🏠' : 
+                                                    category.id === 'fitness' ? '💪' : 
+                                                    category.id === 'accessories' ? '👜' : '📦'}</span>
+                        <div>
+                          <p className="font-medium text-gray-900">{category.name}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
               <button 
                 className="text-gray-700 hover:text-[#FF0076] transition-colors"
@@ -189,6 +226,20 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
                     </button>
                   );
                 })}
+
+                {/* Categories Section */}
+                <div className="py-2">
+                  <p className="text-sm text-gray-500 uppercase font-semibold mb-2">Categories</p>
+                  {categories.map(category => (
+                    <button
+                      key={category.id}
+                      onClick={() => handleCategoryClick(category.id)}
+                      className="w-full py-2 text-left text-base font-medium text-gray-700 hover:text-[#FF0076] transition-colors"
+                    >
+                      {category.name}
+                    </button>
+                  ))}
+                </div>
 
                 {/* Deals and What's New */}
                 <button

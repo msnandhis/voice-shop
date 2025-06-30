@@ -199,7 +199,7 @@ function App() {
         {currentView === 'home' ? (
           <>
             <LandingPage onNavigation={handleNavigation} />
-            <Footer />
+            <Footer onNavigation={handleNavigation} />
           </>
         ) : currentView === 'product-detail' ? (
           <ProductDetail 
@@ -271,7 +271,7 @@ function App() {
               <PaymentSettings />
             )}
             
-            <Footer />
+            <Footer onNavigation={handleNavigation} />
           </>
         )}
       </div>
