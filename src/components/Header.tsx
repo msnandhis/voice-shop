@@ -22,6 +22,20 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
     setMobileMenuOpen(false);
   };
 
+  const publicNavItems = [
+    { name: 'Home', id: 'home', icon: Home },
+    { name: 'Products', id: 'products', icon: Mic },
+    { name: 'About', id: 'about', icon: Info },
+    { name: 'Contact', id: 'contact', icon: Phone }
+  ];
+
+  const userNavItems = [
+    { name: 'Cart', id: 'cart', icon: ShoppingCart },
+    { name: 'Orders', id: 'orders', icon: Package },
+    { name: 'Profile', id: 'profile', icon: User },
+    { name: 'Settings', id: 'settings', icon: SettingsIcon }
+  ];
+
   const handleNavClick = (itemId: string) => {
     if (itemId === 'cart' && onCartClick) {
       onCartClick();
@@ -39,20 +53,6 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
       setMobileMenuOpen(false);
     }
   };
-
-  const publicNavItems = [
-    { name: 'Home', id: 'home', icon: Home },
-    { name: 'Products', id: 'products', icon: Mic },
-    { name: 'About', id: 'about', icon: Info },
-    { name: 'Contact', id: 'contact', icon: Phone }
-  ];
-
-  const userNavItems = [
-    { name: 'Cart', id: 'cart', icon: ShoppingCart },
-    { name: 'Orders', id: 'orders', icon: Package },
-    { name: 'Profile', id: 'profile', icon: User },
-    { name: 'Settings', id: 'settings', icon: SettingsIcon }
-  ];
 
   const categories = [
     { id: 'shoes', name: 'Shoes' },
@@ -278,7 +278,7 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
                   ))}
                 </div>
 
-                {/* Deals and What's New */}
+                {/* Deals */}
                 <button
                   onClick={() => handleNavClick('deals')}
                   className={`
