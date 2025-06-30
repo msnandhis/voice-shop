@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Mic, Star, Truck, Shield, Headphones, ArrowRight, Play, ChevronDown, Search, Heart, TrendingUp, Award, ChevronLeft, ChevronRight, Mail, User } from 'lucide-react';
+import { ShoppingBag, Mic, Star, Truck, Shield, Headphones, ArrowRight, ChevronDown, Search, Heart, TrendingUp, Award, ChevronLeft, ChevronRight, Mail, User } from 'lucide-react';
 import { supabase, Product } from '../lib/supabase';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
@@ -19,28 +19,30 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [currentBannerSlide, setCurrentBannerSlide] = useState(0);
   const [email, setEmail] = useState('');
+  const [bannerSlides, setBannerSlides] = useState<any[]>([]);
+  const [loadingBannerSlides, setLoadingBannerSlides] = useState(true);
 
-  const bannerSlides = [
+  const testimonials = [
     {
-      title: 'Grab Up to 50% Off On Voice Shopping',
-      subtitle: 'Experience the future of e-commerce with hands-free voice commands',
-      buttonText: 'Shop Now',
-      image: 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg',
-      gradient: 'from-pink-50 to-blue-50'
+      name: 'Sarah Johnson',
+      role: 'Busy Mom',
+      image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg',
+      rating: 5,
+      text: 'VoiceShop has revolutionized my shopping experience! I can add items to my cart while cooking dinner or taking care of my kids. It\'s incredibly convenient and accurate.'
     },
     {
-      title: 'New Electronics Collection',
-      subtitle: 'Latest smartphones, laptops, and gadgets with voice control',
-      buttonText: 'Explore Electronics',
-      image: 'https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg',
-      gradient: 'from-blue-50 to-purple-50'
+      name: 'David Chen',
+      role: 'Tech Professional',
+      image: 'https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg',
+      rating: 5,
+      text: 'The voice recognition is spot-on. I can browse products, compare prices, and make purchases without ever touching my phone. This is the future of e-commerce!'
     },
     {
-      title: 'Premium Audio Experience',
-      subtitle: 'High-quality headphones and speakers for audiophiles',
-      buttonText: 'Shop Audio',
-      image: 'https://images.pexels.com/photos/3780681/pexels-photo-3780681.jpeg',
-      gradient: 'from-purple-50 to-pink-50'
+      name: 'Emily Rodriguez',
+      role: 'Accessibility Advocate',
+      image: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg',
+      rating: 5,
+      text: 'As someone with mobility challenges, VoiceShop has made online shopping accessible and enjoyable. The voice commands work perfectly every time.'
     }
   ];
 
@@ -89,30 +91,6 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
     }
   ];
 
-  const testimonials = [
-    {
-      name: 'Sarah Johnson',
-      role: 'Busy Mom',
-      image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg',
-      rating: 5,
-      text: 'VoiceShop has revolutionized my shopping experience! I can add items to my cart while cooking dinner or taking care of my kids. It\'s incredibly convenient and accurate.'
-    },
-    {
-      name: 'David Chen',
-      role: 'Tech Professional',
-      image: 'https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg',
-      rating: 5,
-      text: 'The voice recognition is spot-on. I can browse products, compare prices, and make purchases without ever touching my phone. This is the future of e-commerce!'
-    },
-    {
-      name: 'Emily Rodriguez',
-      role: 'Accessibility Advocate',
-      image: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg',
-      rating: 5,
-      text: 'As someone with mobility challenges, VoiceShop has made online shopping accessible and enjoyable. The voice commands work perfectly every time.'
-    }
-  ];
-
   useEffect(() => {
     if (featuredProducts.length > 0) {
       console.log("Updating voice context with featured products:", featuredProducts.length);
@@ -132,11 +110,101 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
       setCurrentBannerSlide((prev) => (prev + 1) % bannerSlides.length);
     }, 7000);
     return () => clearInterval(interval);
-  }, []);
+  }, [bannerSlides]);
 
   useEffect(() => {
     loadFeaturedProducts();
+    loadBannerProducts();
   }, []);
+
+  const loadBannerProducts = async () => {
+    setLoadingBannerSlides(true);
+    try {
+      // Get 3 top-rated products from different categories for the banner
+      const { data: bannerProducts, error } = await supabase
+        .from('products')
+        .select('*, brand:brands(*)')
+        .gte('rating', 4.5)
+        .gte('stock_quantity', 1)
+        .order('rating', { ascending: false })
+        .limit(3);
+
+      if (error) throw error;
+      
+      if (bannerProducts && bannerProducts.length > 0) {
+        const slides = bannerProducts.map((product, index) => {
+          let category = product.category || '';
+          let gradients = ['from-pink-50 to-blue-50', 'from-blue-50 to-purple-50', 'from-purple-50 to-pink-50'];
+          
+          return {
+            id: product.id,
+            title: product.name,
+            subtitle: product.description ? 
+              (product.description.length > 80 ? product.description.substring(0, 80) + '...' : product.description) : 
+              `Experience ${product.name} with VoiceShop`,
+            buttonText: `Shop Now`,
+            image: product.image_url || `https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg`,
+            gradient: gradients[index % gradients.length],
+            category: category,
+            brand: product.brand?.name || ''
+          };
+        });
+
+        setBannerSlides(slides);
+      } else {
+        // Fallback slides if no products found
+        setBannerSlides([
+          {
+            id: null,
+            title: 'Grab Up to 50% Off On Voice Shopping',
+            subtitle: 'Experience the future of e-commerce with hands-free voice commands',
+            buttonText: 'Shop Now',
+            image: 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg',
+            gradient: 'from-pink-50 to-blue-50',
+            category: '',
+            brand: ''
+          },
+          {
+            id: null,
+            title: 'New Electronics Collection',
+            subtitle: 'Latest smartphones, laptops, and gadgets with voice control',
+            buttonText: 'Explore Electronics',
+            image: 'https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg',
+            gradient: 'from-blue-50 to-purple-50',
+            category: 'electronics',
+            brand: ''
+          },
+          {
+            id: null,
+            title: 'Premium Audio Experience',
+            subtitle: 'High-quality headphones and speakers for audiophiles',
+            buttonText: 'Shop Audio',
+            image: 'https://images.pexels.com/photos/3780681/pexels-photo-3780681.jpeg',
+            gradient: 'from-purple-50 to-pink-50',
+            category: 'electronics',
+            brand: ''
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error loading banner products:', error);
+      // Set fallback slides on error
+      setBannerSlides([
+        {
+          id: null,
+          title: 'Shop With Your Voice',
+          subtitle: 'Experience the future of e-commerce with hands-free voice commands',
+          buttonText: 'Shop Now',
+          image: 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg',
+          gradient: 'from-pink-50 to-blue-50',
+          category: '',
+          brand: ''
+        }
+      ]);
+    } finally {
+      setLoadingBannerSlides(false);
+    }
+  };
 
   const loadFeaturedProducts = async () => {
     try {
@@ -229,6 +297,28 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
     }
 
     return stars;
+  };
+
+  const handleBannerProductClick = (slideId: string | null, category: string) => {
+    if (slideId) {
+      // If we have a product ID, select that product and navigate to product detail
+      const product = featuredProducts.find(p => p.id === slideId);
+      if (product) {
+        setSelectedProduct(product);
+        onNavigation('product-detail');
+      } else {
+        // If product not found in featuredProducts, navigate to products with category
+        onNavigation('products');
+      }
+    } else if (category) {
+      // If no product ID but we have a category, navigate to products with that category
+      if (typeof window.handleBrowseProducts === 'function') {
+        window.handleBrowseProducts(category);
+      }
+    } else {
+      // Default to products page
+      onNavigation('products');
+    }
   };
 
   return (
@@ -349,50 +439,52 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
         <div className="max-w-7xl mx-auto px-6">
           <div className="bg-white rounded-3xl shadow-xl overflow-hidden relative">
             <div className="relative h-96 lg:h-[500px]">
-              {bannerSlides.map((slide, index) => (
-                <div
-                  key={index}
-                  className={`absolute inset-0 transition-opacity duration-1000 ${
-                    index === currentBannerSlide ? 'opacity-100' : 'opacity-0'
-                  }`}
-                >
-                  <div className={`grid grid-cols-1 lg:grid-cols-2 items-center h-full bg-gradient-to-r ${slide.gradient}`}>
-                    <div className="p-12 lg:p-16">
-                      <h1 className="text-4xl lg:text-6xl font-bold text-[#12131A] mb-6 font-['Quicksand'] leading-tight">
-                        {slide.title.split(' ').map((word, i) => (
-                          <span key={i} className={word.includes('Voice') || word.includes('50%') ? 'text-[#FF0076]' : ''}>
-                            {word}{' '}
-                          </span>
-                        ))}
-                      </h1>
-                      <p className="text-gray-600 mb-8 text-lg lg:text-xl leading-relaxed">
-                        {slide.subtitle}
-                      </p>
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <button
-                          onClick={() => onNavigation('products')}
-                          className="inline-flex items-center px-8 py-4 bg-[#FF0076] text-white rounded-xl font-semibold hover:bg-[#FF0076]/90 transition-all duration-300 transform hover:scale-105 shadow-lg"
-                        >
-                          {slide.buttonText}
-                          <ArrowRight className="w-5 h-5 ml-2" />
-                        </button>
-                        <button className="inline-flex items-center px-8 py-4 border-2 border-[#FF0076] text-[#FF0076] rounded-xl font-semibold hover:bg-[#FF0076] hover:text-white transition-all duration-300">
-                          <Play className="w-5 h-5 mr-2" />
-                          Watch Demo
-                        </button>
+              {loadingBannerSlides ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#FF0076] border-t-transparent"></div>
+                </div>
+              ) : (
+                bannerSlides.map((slide, index) => (
+                  <div
+                    key={index}
+                    className={`absolute inset-0 transition-opacity duration-1000 ${
+                      index === currentBannerSlide ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  >
+                    <div className={`grid grid-cols-1 lg:grid-cols-2 items-center h-full bg-gradient-to-r ${slide.gradient}`}>
+                      <div className="p-12 lg:p-16">
+                        <h1 className="text-4xl lg:text-6xl font-bold text-[#12131A] mb-6 font-['Quicksand'] leading-tight">
+                          {slide.title.split(' ').map((word, i) => (
+                            <span key={i} className={word.includes('Voice') || word.includes('50%') ? 'text-[#FF0076]' : ''}>
+                              {word}{' '}
+                            </span>
+                          ))}
+                        </h1>
+                        <p className="text-gray-600 mb-8 text-lg lg:text-xl leading-relaxed">
+                          {slide.subtitle}
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <button
+                            onClick={() => handleBannerProductClick(slide.id, slide.category)}
+                            className="inline-flex items-center px-8 py-4 bg-[#FF0076] text-white rounded-xl font-semibold hover:bg-[#FF0076]/90 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                          >
+                            {slide.buttonText}
+                            <ArrowRight className="w-5 h-5 ml-2" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="relative h-full">
+                        <img
+                          src={slide.image}
+                          alt={slide.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-l from-transparent to-white/20"></div>
                       </div>
                     </div>
-                    <div className="relative h-full">
-                      <img
-                        src={slide.image}
-                        alt={slide.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-l from-transparent to-white/20"></div>
-                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             
             {/* Carousel Controls */}
