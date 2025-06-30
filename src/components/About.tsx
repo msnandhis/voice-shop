@@ -2,34 +2,6 @@ import React from 'react';
 import { Mic, Users, Award, Globe, Heart, Zap } from 'lucide-react';
 
 export function About() {
-  const stats = [
-    { number: '50K+', label: 'Happy Customers' },
-    { number: '99.9%', label: 'Uptime' },
-    { number: '24/7', label: 'Voice Support' },
-    { number: '500+', label: 'Products' }
-  ];
-
-  const team = [
-    {
-      name: 'Sarah Chen',
-      role: 'CEO & Founder',
-      image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg',
-      description: 'Visionary leader with 15+ years in e-commerce and AI technology.'
-    },
-    {
-      name: 'David Rodriguez',
-      role: 'CTO',
-      image: 'https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg',
-      description: 'Tech expert specializing in voice recognition and machine learning.'
-    },
-    {
-      name: 'Emily Johnson',
-      role: 'Head of Design',
-      image: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg',
-      description: 'UX designer focused on creating accessible and intuitive experiences.'
-    }
-  ];
-
   const values = [
     {
       icon: Heart,
@@ -76,22 +48,6 @@ export function About() {
                 className="rounded-3xl shadow-2xl"
               />
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-4xl lg:text-5xl font-bold text-[#FF0076] mb-2 font-['Quicksand']">
-                  {stat.number}
-                </div>
-                <div className="text-gray-600 font-medium">{stat.label}</div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -148,42 +104,8 @@ export function About() {
         </div>
       </section>
 
-      {/* Team Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-[#12131A] mb-4 font-['Quicksand']">
-              Meet Our Team
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              We're a diverse group of innovators, designers, and engineers passionate about 
-              creating the future of commerce.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {team.map((member, index) => (
-              <div key={index} className="bg-white rounded-3xl p-8 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="text-center">
-                  <img
-                    src={member.image}
-                    alt={member.name}
-                    className="w-24 h-24 rounded-full mx-auto mb-6 object-cover"
-                  />
-                  <h3 className="text-xl font-bold text-[#12131A] mb-2 font-['Quicksand']">
-                    {member.name}
-                  </h3>
-                  <p className="text-[#FF0076] font-medium mb-4">{member.role}</p>
-                  <p className="text-gray-600 leading-relaxed">{member.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Technology Section */}
-      <section className="py-20">
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="relative">
@@ -203,20 +125,20 @@ export function About() {
                 to ensure accurate voice commands every time.
               </p>
               <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-[#FF0076] rounded-full"></div>
+                <div className="flex items-start space-x-3">
+                  <span className="w-2 h-2 bg-[#FF0076] rounded-full mt-2"></span>
                   <span className="text-gray-700">Advanced Natural Language Processing</span>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-[#FF0076] rounded-full"></div>
+                <div className="flex items-start space-x-3">
+                  <span className="w-2 h-2 bg-[#FF0076] rounded-full mt-2"></span>
                   <span className="text-gray-700">Real-time Voice Recognition</span>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-[#FF0076] rounded-full"></div>
+                <div className="flex items-start space-x-3">
+                  <span className="w-2 h-2 bg-[#FF0076] rounded-full mt-2"></span>
                   <span className="text-gray-700">Contextual Understanding</span>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-[#FF0076] rounded-full"></div>
+                <div className="flex items-start space-x-3">
+                  <span className="w-2 h-2 bg-[#FF0076] rounded-full mt-2"></span>
                   <span className="text-gray-700">Multi-language Support</span>
                 </div>
               </div>

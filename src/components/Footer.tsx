@@ -38,11 +38,6 @@ export function Footer({ onNavigation }: FooterProps) {
               The future of e-commerce is here. Shop entirely through voice commands for a seamless, 
               accessible, and hands-free shopping experience.
             </p>
-            <div className="flex space-x-4">
-              <div className="flex items-center text-gray-300">
-                <span className="text-sm">hello@voiceshop.app</span>
-              </div>
-            </div>
           </div>
 
           {/* Quick Links */}
