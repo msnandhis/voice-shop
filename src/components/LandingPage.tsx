@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Mic, Star, Truck, Shield, Headphones, ArrowRight, ChevronDown, Search, Heart, TrendingUp, Award, ChevronLeft, ChevronRight, Mail } from 'lucide-react';
+import { ShoppingBag, Mic, Star, Truck, Shield, Headphones, ArrowRight, ChevronDown, Search, Heart, TrendingUp, Award, ChevronLeft, ChevronRight, Mail, User } from 'lucide-react';
 import { supabase, Product } from '../lib/supabase';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
