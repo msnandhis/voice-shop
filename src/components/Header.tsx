@@ -170,14 +170,18 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
                     )}
                   </button>
                   
-                  <div className="flex items-center space-x-2">
-                    <User className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm text-gray-700">{user.email}</span>
-                  </div>
+                  <button
+                    onClick={() => onNavigation?.('profile')}
+                    className="p-2 text-gray-700 hover:text-[#FF0076] transition-colors"
+                    title="Your Profile"
+                  >
+                    <User className="w-5 h-5" />
+                  </button>
                   
                   <button
                     onClick={handleSignOut}
                     className="p-2 text-gray-600 hover:text-red-500 transition-colors"
+                    title="Sign Out"
                   >
                     <LogOut className="w-5 h-5" />
                   </button>
@@ -302,11 +306,6 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
 
                     {/* User Account Actions */}
                     <div className="pt-4 border-t border-gray-100">
-                      <div className="flex items-center space-x-2 mb-4">
-                        <User className="w-5 h-5 text-gray-600" />
-                        <span className="text-sm text-gray-700">{user.email}</span>
-                      </div>
-                      
                       <button
                         onClick={handleSignOut}
                         className="flex items-center text-red-500 hover:text-red-600 transition-colors"
