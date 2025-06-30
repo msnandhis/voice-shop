@@ -7,7 +7,7 @@ interface HeaderProps {
   onAuthClick?: () => void;
   onCartClick?: () => void;
   onLogoClick?: () => void;
-  onNavigation?: (view: 'home' | 'products' | 'cart' | 'checkout' | 'orders' | 'profile' | 'settings' | 'about' | 'contact' | 'deals' | 'whats-new' | 'login' | 'register') => void;
+  onNavigation?: (view: 'home' | 'products' | 'cart' | 'checkout' | 'orders' | 'profile' | 'settings' | 'about' | 'contact' | 'deals' | 'whats-new' | 'login' | 'register' | 'privacy' | 'terms' | 'refund' | 'faq') => void;
   currentView?: string;
 }
 
