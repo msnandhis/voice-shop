@@ -1,0 +1,287 @@
+import React, { useState } from 'react';
+import { ShoppingCart, User, LogOut, Menu, X, Mic, Package, Settings as SettingsIcon, Home, Info, Phone, Search, ChevronDown } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { useCart } from '../hooks/useCart';
+
+interface HeaderProps {
+  onAuthClick?: () => void;
+  onCartClick?: () => void;
+  onLogoClick?: () => void;
+  onNavigation?: (view: 'home' | 'products' | 'cart' | 'checkout' | 'orders' | 'profile' | 'settings' | 'about' | 'contact' | 'deals' | 'whats-new' | 'login' | 'register') => void;
+  currentView?: string;
+}
+
+export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, currentView }: HeaderProps) {
+  const { user, signOut } = useAuth();
+  const { getTotalItems } = useCart();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    setMobileMenuOpen(false);
+  };
+
+  const publicNavItems = [
+    { name: 'Home', id: 'home', icon: Home },
+    { name: 'Products', id: 'products', icon: Mic },
+    { name: 'About', id: 'about', icon: Info },
+    { name: 'Contact', id: 'contact', icon: Phone }
+  ];
+
+  const userNavItems = [
+    { name: 'Cart', id: 'cart', icon: ShoppingCart },
+    { name: 'Orders', id: 'orders', icon: Package },
+    { name: 'Profile', id: 'profile', icon: User },
+    { name: 'Settings', id: 'settings', icon: SettingsIcon }
+  ];
+
+  const handleNavClick = (itemId: string) => {
+    if (itemId === 'cart' && onCartClick) {
+      onCartClick();
+    } else if (itemId === 'home' && onLogoClick) {
+      onLogoClick();
+    } else if (onNavigation) {
+      onNavigation(itemId as any);
+    }
+    setMobileMenuOpen(false);
+  };
+
+  return (
+    <>
+      {/* Top Bar */}
+      <div className="bg-[#12131A] text-white py-2">
+        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center text-sm">
+          <div className="flex items-center space-x-4">
+            <span>📞 +001234567890</span>
+            <span>Get 50% Off on Selected Items | Shop Now</span>
+          </div>
+          <div className="flex items-center space-x-4">
+            <select className="bg-transparent border-none text-white text-sm">
+              <option>Eng</option>
+            </select>
+            <select className="bg-transparent border-none text-white text-sm">
+              <option>Location</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Header */}
+      <header className="bg-white shadow-sm border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <button
+              onClick={onLogoClick}
+              className="flex items-center space-x-2 text-xl font-bold text-[#12131A] hover:text-[#FF0076] transition-colors font-['Quicksand']"
+            >
+              <div className="w-8 h-8 bg-[#FF0076] rounded-full flex items-center justify-center">
+                <Mic className="w-5 h-5 text-white" />
+              </div>
+              <span>VoiceShop</span>
+            </button>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center space-x-8">
+              <div className="relative group">
+                <button className="flex items-center space-x-1 text-gray-700 hover:text-[#FF0076] transition-colors">
+                  <span>Categories</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+              </div>
+              <button 
+                className="text-gray-700 hover:text-[#FF0076] transition-colors"
+                onClick={() => onNavigation?.('deals')}
+              >
+                Deals
+              </button>
+              <button 
+                className="text-gray-700 hover:text-[#FF0076] transition-colors"
+                onClick={() => onNavigation?.('whats-new')}
+              >
+                What's New
+              </button>
+            </nav>
+
+            {/* Search Bar */}
+            <div className="hidden md:flex items-center flex-1 max-w-md mx-8">
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  placeholder="Search Product"
+                  className="w-full pl-4 pr-12 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF0076] focus:border-transparent"
+                />
+                <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <Search className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            {/* Desktop Actions */}
+            <div className="hidden lg:flex items-center space-x-4">
+              {user ? (
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={onCartClick}
+                    className="relative p-2 text-gray-700 hover:text-[#FF0076] transition-colors"
+                  >
+                    <ShoppingCart className="w-6 h-6" />
+                    {getTotalItems() > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-[#FF0076] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {getTotalItems()}
+                      </span>
+                    )}
+                  </button>
+                  
+                  <div className="flex items-center space-x-2">
+                    <User className="w-5 h-5 text-gray-600" />
+                    <span className="text-sm text-gray-700">{user.email}</span>
+                  </div>
+                  
+                  <button
+                    onClick={handleSignOut}
+                    className="p-2 text-gray-600 hover:text-red-500 transition-colors"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={onAuthClick}
+                  className="inline-flex items-center px-4 py-2 rounded-lg bg-[#FF0076] text-white font-medium hover:bg-[#FF0076]/90 transition-all duration-300"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Account
+                </button>
+              )}
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="lg:hidden border-t border-gray-100 py-4">
+              <nav className="flex flex-col space-y-4">
+                {/* Public Navigation */}
+                {publicNavItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleNavClick(item.id)}
+                      className={`
+                        text-left text-base font-medium transition-colors flex items-center space-x-3
+                        ${currentView === item.id 
+                          ? 'text-[#FF0076]' 
+                          : 'text-gray-700 hover:text-[#FF0076]'
+                        }
+                      `}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span>{item.name}</span>
+                    </button>
+                  );
+                })}
+
+                {/* Deals and What's New */}
+                <button
+                  onClick={() => handleNavClick('deals')}
+                  className={`
+                    text-left text-base font-medium transition-colors flex items-center space-x-3
+                    ${currentView === 'deals' 
+                      ? 'text-[#FF0076]' 
+                      : 'text-gray-700 hover:text-[#FF0076]'
+                    }
+                  `}
+                >
+                  <span className="w-5 h-5">🏷️</span>
+                  <span>Deals</span>
+                </button>
+                <button
+                  onClick={() => handleNavClick('whats-new')}
+                  className={`
+                    text-left text-base font-medium transition-colors flex items-center space-x-3
+                    ${currentView === 'whats-new' 
+                      ? 'text-[#FF0076]' 
+                      : 'text-gray-700 hover:text-[#FF0076]'
+                    }
+                  `}
+                >
+                  <span className="w-5 h-5">✨</span>
+                  <span>What's New</span>
+                </button>
+
+                {/* User Navigation (only if logged in) */}
+                {user && (
+                  <>
+                    <div className="border-t border-gray-200 pt-4">
+                      {userNavItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => handleNavClick(item.id)}
+                            className={`
+                              text-left text-base font-medium transition-colors flex items-center space-x-3 mb-4
+                              ${currentView === item.id 
+                                ? 'text-[#FF0076]' 
+                                : 'text-gray-700 hover:text-[#FF0076]'
+                              }
+                            `}
+                          >
+                            <Icon className="w-5 h-5" />
+                            <span>{item.name}</span>
+                            {item.id === 'cart' && getTotalItems() > 0 && (
+                              <span className="bg-[#FF0076] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                {getTotalItems()}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+                
+                {user ? (
+                  <div className="pt-4 border-t border-gray-100">
+                    <div className="flex items-center space-x-2 mb-4">
+                      <User className="w-5 h-5 text-gray-600" />
+                      <span className="text-sm text-gray-700">{user.email}</span>
+                    </div>
+                    
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center text-red-500 hover:text-red-600 transition-colors"
+                    >
+                      <LogOut className="w-5 h-5 mr-2" />
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      onAuthClick?.();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="inline-flex items-center px-4 py-2 rounded-lg bg-[#FF0076] text-white font-medium hover:bg-[#FF0076]/90 transition-all duration-300"
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Account
+                  </button>
+                )}
+              </nav>
+            </div>
+          )}
+        </div>
+      </header>
+    </>
+  );
+}
