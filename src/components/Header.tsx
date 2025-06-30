@@ -15,6 +15,7 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
   const { user, signOut } = useAuth();
   const { getTotalItems } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleSignOut = async () => {
     await signOut();
@@ -61,6 +62,20 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
     { id: 'fitness', name: 'Fitness' },
     { id: 'accessories', name: 'Accessories' }
   ];
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    
+    // Execute search by navigating to products with the search term
+    if (typeof window.handleBrowseProducts === 'function') {
+      window.handleBrowseProducts('');
+      // Store search query in sessionStorage for the ProductCatalog to use
+      sessionStorage.setItem('searchQuery', searchQuery);
+      // Reset search input
+      setSearchQuery('');
+    }
+  };
 
   return (
     <>
@@ -132,26 +147,25 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
               >
                 Deals
               </button>
-              <button 
-                className="text-gray-700 hover:text-[#FF0076] transition-colors"
-                onClick={() => onNavigation?.('whats-new')}
-              >
-                What's New
-              </button>
             </nav>
 
             {/* Search Bar */}
             <div className="hidden md:flex items-center flex-1 max-w-md mx-8">
-              <div className="relative w-full">
+              <form className="relative w-full" onSubmit={handleSearch}>
                 <input
                   type="text"
                   placeholder="Search Product"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-4 pr-12 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF0076] focus:border-transparent"
                 />
-                <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <button 
+                  type="submit" 
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 hover:text-[#FF0076] transition-colors"
+                >
                   <Search className="w-5 h-5 text-gray-400" />
                 </button>
-              </div>
+              </form>
             </div>
 
             {/* Desktop Actions */}
@@ -209,6 +223,25 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="lg:hidden border-t border-gray-100 py-4">
+              {/* Mobile Search */}
+              <form className="mb-4" onSubmit={handleSearch}>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-4 pr-12 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF0076]"
+                  />
+                  <button 
+                    type="submit"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#FF0076]"
+                  >
+                    <Search className="w-5 h-5" />
+                  </button>
+                </div>
+              </form>
+              
               <nav className="flex flex-col space-y-4">
                 {/* Public Navigation */}
                 {publicNavItems.map((item) => {
@@ -258,19 +291,6 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
                 >
                   <span className="w-5 h-5">🏷️</span>
                   <span>Deals</span>
-                </button>
-                <button
-                  onClick={() => handleNavClick('whats-new')}
-                  className={`
-                    text-left text-base font-medium transition-colors flex items-center space-x-3
-                    ${currentView === 'whats-new' 
-                      ? 'text-[#FF0076]' 
-                      : 'text-gray-700 hover:text-[#FF0076]'
-                    }
-                  `}
-                >
-                  <span className="w-5 h-5">✨</span>
-                  <span>What's New</span>
                 </button>
 
                 {/* User Navigation and Actions */}

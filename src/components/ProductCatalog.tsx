@@ -52,6 +52,14 @@ export function ProductCatalog({ searchQuery, category, products: externalProduc
 
   useEffect(() => {
     loadBrands();
+    
+    // Check for search query in sessionStorage (from header search)
+    const storedSearchQuery = sessionStorage.getItem('searchQuery');
+    if (storedSearchQuery) {
+      setSearchTerm(storedSearchQuery);
+      // Clear it after using it
+      sessionStorage.removeItem('searchQuery');
+    }
   }, []);
 
   useEffect(() => {
@@ -215,6 +223,11 @@ export function ProductCatalog({ searchQuery, category, products: externalProduc
     return primaryImage?.image_url || images[0]?.image_url || 'https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg';
   };
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    loadProducts();
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       {/* Header */}
@@ -241,15 +254,24 @@ export function ProductCatalog({ searchQuery, category, products: externalProduc
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
         <div className="flex flex-col lg:flex-row gap-4 items-center">
           {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF0076] focus:border-transparent"
-            />
+          <div className="flex-1 relative w-full">
+            <form onSubmit={handleSearchSubmit}>
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF0076] focus:border-transparent"
+              />
+              <button 
+                type="submit" 
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#FF0076]"
+                aria-label="Search"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+            </form>
           </div>
           
           {/* Category Filter */}
