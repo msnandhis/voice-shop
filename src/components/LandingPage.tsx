@@ -156,7 +156,8 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
             image: product.image_url || `https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg`,
             gradient: gradients[index % gradients.length],
             category: product.category,
-            brand: product.brand?.name || ''
+            brand: product.brand?.name || '',
+            isIphone: product.name.includes('iPhone') // Flag to identify iPhone
           };
         });
 
@@ -172,7 +173,8 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
             image: 'https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg',
             gradient: 'from-pink-50 to-blue-50',
             category: 'electronics',
-            brand: 'Apple'
+            brand: 'Apple',
+            isIphone: true
           },
           {
             id: null,
@@ -182,7 +184,8 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
             image: 'https://images.pexels.com/photos/18105/pexels-photo.jpg',
             gradient: 'from-blue-50 to-purple-50',
             category: 'electronics',
-            brand: 'Apple'
+            brand: 'Apple',
+            isIphone: false
           },
           {
             id: null,
@@ -192,7 +195,8 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
             image: 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg',
             gradient: 'from-purple-50 to-pink-50',
             category: 'electronics',
-            brand: 'Sony'
+            brand: 'Sony',
+            isIphone: false
           }
         ]);
       }
@@ -208,7 +212,8 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
           image: 'https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg',
           gradient: 'from-pink-50 to-blue-50',
           category: 'electronics',
-          brand: 'Apple'
+          brand: 'Apple',
+          isIphone: true
         },
         {
           id: null,
@@ -218,7 +223,8 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
           image: 'https://images.pexels.com/photos/18105/pexels-photo.jpg',
           gradient: 'from-blue-50 to-purple-50',
           category: 'electronics',
-          brand: 'Apple'
+          brand: 'Apple',
+          isIphone: false
         },
         {
           id: null,
@@ -228,7 +234,8 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
           image: 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg',
           gradient: 'from-purple-50 to-pink-50',
           category: 'electronics',
-          brand: 'Sony'
+          brand: 'Sony',
+          isIphone: false
         }
       ]);
     } finally {
@@ -517,13 +524,16 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
                           {slide.subtitle}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4">
-                          <button
-                            onClick={() => handleBannerProductClick(slide.id, slide.category)}
-                            className="inline-flex items-center px-8 py-4 bg-[#FF0076] text-white rounded-xl font-semibold hover:bg-[#FF0076]/90 transition-all duration-300 transform hover:scale-105 shadow-lg"
-                          >
-                            {slide.buttonText}
-                            <ArrowRight className="w-5 h-5 ml-2" />
-                          </button>
+                          {/* Only show Shop Now button for iPhone slides */}
+                          {slide.isIphone && (
+                            <button
+                              onClick={() => handleBannerProductClick(slide.id, slide.category)}
+                              className="inline-flex items-center px-8 py-4 bg-[#FF0076] text-white rounded-xl font-semibold hover:bg-[#FF0076]/90 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                            >
+                              {slide.buttonText}
+                              <ArrowRight className="w-5 h-5 ml-2" />
+                            </button>
+                          )}
                         </div>
                       </div>
                       <div className="relative h-full">
