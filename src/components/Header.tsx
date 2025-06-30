@@ -333,6 +333,6 @@ export function Header({ onAuthClick, onCartClick, onLogoClick, onNavigation, cu
           )}
         </div>
       </header>
-    </>
+    </div>
   );
 }

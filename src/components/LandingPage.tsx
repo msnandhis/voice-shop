@@ -120,20 +120,30 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
   const loadBannerProducts = async () => {
     setLoadingBannerSlides(true);
     try {
-      // Get 3 top-rated products from different categories for the banner
-      const { data: bannerProducts, error } = await supabase
+      // Instead of random products, let's specifically fetch iPhone, MacBook, and Sony headphones
+      const { data: specificProducts, error } = await supabase
         .from('products')
         .select('*, brand:brands(*)')
-        .gte('rating', 4.5)
+        .or('name.ilike.%iPhone%,name.ilike.%MacBook%,name.ilike.%Sony%')
         .gte('stock_quantity', 1)
-        .order('rating', { ascending: false })
         .limit(3);
 
       if (error) throw error;
       
-      if (bannerProducts && bannerProducts.length > 0) {
-        const slides = bannerProducts.map((product, index) => {
-          let category = product.category || '';
+      if (specificProducts && specificProducts.length > 0) {
+        // Sort them to ensure iPhone is first (to replace Yeti)
+        const sorted = [...specificProducts].sort((a, b) => {
+          // Put iPhone first
+          if (a.name.includes('iPhone')) return -1;
+          if (b.name.includes('iPhone')) return 1;
+          // Then MacBook
+          if (a.name.includes('MacBook')) return -1;
+          if (b.name.includes('MacBook')) return 1;
+          // Then Sony
+          return 0;
+        });
+
+        const slides = sorted.map((product, index) => {
           let gradients = ['from-pink-50 to-blue-50', 'from-blue-50 to-purple-50', 'from-purple-50 to-pink-50'];
           
           return {
@@ -143,9 +153,9 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
               (product.description.length > 80 ? product.description.substring(0, 80) + '...' : product.description) : 
               `Experience ${product.name} with VoiceShop`,
             buttonText: `Shop Now`,
-            image: product.image_url || `https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg`,
+            image: product.image_url || `https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg`,
             gradient: gradients[index % gradients.length],
-            category: category,
+            category: product.category,
             brand: product.brand?.name || ''
           };
         });
@@ -156,33 +166,33 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
         setBannerSlides([
           {
             id: null,
-            title: 'Grab Up to 50% Off On Voice Shopping',
-            subtitle: 'Experience the future of e-commerce with hands-free voice commands',
+            title: 'iPhone 15 Pro - Revolutionary',
+            subtitle: 'Experience the future with the latest iPhone 15 Pro. Revolutionary camera system and all-day battery life.',
             buttonText: 'Shop Now',
-            image: 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg',
+            image: 'https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg',
             gradient: 'from-pink-50 to-blue-50',
-            category: '',
-            brand: ''
+            category: 'electronics',
+            brand: 'Apple'
           },
           {
             id: null,
-            title: 'New Electronics Collection',
-            subtitle: 'Latest smartphones, laptops, and gadgets with voice control',
-            buttonText: 'Explore Electronics',
-            image: 'https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg',
+            title: 'MacBook Air M3',
+            subtitle: 'Ultra-thin laptop with Apple Silicon and all-day battery life',
+            buttonText: 'Shop Now',
+            image: 'https://images.pexels.com/photos/18105/pexels-photo.jpg',
             gradient: 'from-blue-50 to-purple-50',
             category: 'electronics',
-            brand: ''
+            brand: 'Apple'
           },
           {
             id: null,
-            title: 'Premium Audio Experience',
-            subtitle: 'High-quality headphones and speakers for audiophiles',
+            title: 'Sony WH-1000XM5',
+            subtitle: 'Industry-leading noise canceling wireless headphones with premium sound',
             buttonText: 'Shop Audio',
-            image: 'https://images.pexels.com/photos/3780681/pexels-photo-3780681.jpeg',
+            image: 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg',
             gradient: 'from-purple-50 to-pink-50',
             category: 'electronics',
-            brand: ''
+            brand: 'Sony'
           }
         ]);
       }
@@ -192,13 +202,33 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
       setBannerSlides([
         {
           id: null,
-          title: 'Shop With Your Voice',
-          subtitle: 'Experience the future of e-commerce with hands-free voice commands',
+          title: 'iPhone 15 Pro - Revolutionary',
+          subtitle: 'Experience the future with the latest iPhone 15 Pro. Revolutionary camera system and all-day battery life.',
           buttonText: 'Shop Now',
-          image: 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg',
+          image: 'https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg',
           gradient: 'from-pink-50 to-blue-50',
-          category: '',
-          brand: ''
+          category: 'electronics',
+          brand: 'Apple'
+        },
+        {
+          id: null,
+          title: 'MacBook Air M3',
+          subtitle: 'Ultra-thin laptop with Apple Silicon and all-day battery life',
+          buttonText: 'Shop MacBook',
+          image: 'https://images.pexels.com/photos/18105/pexels-photo.jpg',
+          gradient: 'from-blue-50 to-purple-50',
+          category: 'electronics',
+          brand: 'Apple'
+        },
+        {
+          id: null,
+          title: 'Sony WH-1000XM5 Headphones',
+          subtitle: 'Industry-leading noise canceling with premium sound quality',
+          buttonText: 'Shop Audio',
+          image: 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg',
+          gradient: 'from-purple-50 to-pink-50',
+          category: 'electronics',
+          brand: 'Sony'
         }
       ]);
     } finally {
@@ -271,6 +301,51 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
     }).format(price);
   };
 
+  const handleBannerProductClick = (slideId: string | null, category: string) => {
+    if (slideId) {
+      // If we have a product ID, select that product and navigate to product detail
+      const product = featuredProducts.find(p => p.id === slideId);
+      if (product) {
+        setSelectedProduct(product);
+        onNavigation('product-detail');
+      } else {
+        // If product not found in featuredProducts, try to fetch it
+        fetchAndViewProduct(slideId);
+      }
+    } else if (category) {
+      // If no product ID but we have a category, navigate to products with that category
+      if (typeof window.handleBrowseProducts === 'function') {
+        window.handleBrowseProducts(category);
+      }
+    } else {
+      // Default to products page
+      onNavigation('products');
+    }
+  };
+
+  const fetchAndViewProduct = async (productId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .single();
+      
+      if (error) throw error;
+      
+      if (data) {
+        setSelectedProduct(data);
+        onNavigation('product-detail');
+      } else {
+        // If product not found, navigate to products
+        onNavigation('products');
+      }
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      onNavigation('products');
+    }
+  };
+
   const renderStars = (rating: number) => {
     const stars = [];
     const fullStars = Math.floor(rating);
@@ -297,28 +372,6 @@ export function LandingPage({ onNavigation }: LandingPageProps) {
     }
 
     return stars;
-  };
-
-  const handleBannerProductClick = (slideId: string | null, category: string) => {
-    if (slideId) {
-      // If we have a product ID, select that product and navigate to product detail
-      const product = featuredProducts.find(p => p.id === slideId);
-      if (product) {
-        setSelectedProduct(product);
-        onNavigation('product-detail');
-      } else {
-        // If product not found in featuredProducts, navigate to products with category
-        onNavigation('products');
-      }
-    } else if (category) {
-      // If no product ID but we have a category, navigate to products with that category
-      if (typeof window.handleBrowseProducts === 'function') {
-        window.handleBrowseProducts(category);
-      }
-    } else {
-      // Default to products page
-      onNavigation('products');
-    }
   };
 
   return (
