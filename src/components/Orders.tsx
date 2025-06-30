@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Truck, CheckCircle, XCircle, Clock, Search, Filter, Eye } from 'lucide-react';
+import { Package, Truck, CheckCircle, XCircle, Clock, Search, Filter, Eye, AlertCircle, CreditCard } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase, Order } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import { loadStripe } from '@stripe/stripe-js';
 
 interface OrderWithItems extends Order {
   order_items?: Array<{
@@ -17,6 +18,9 @@ interface OrderWithItems extends Order {
   }>;
 }
 
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
+
 export function Orders() {
   const { userProfile } = useAuth();
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
@@ -24,6 +28,7 @@ export function Orders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   useEffect(() => {
     if (userProfile) {
@@ -68,6 +73,79 @@ export function Orders() {
       setOrders([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePayForOrder = async (orderId: string) => {
+    if (!userProfile) {
+      toast.error('Please sign in to make a payment');
+      return;
+    }
+
+    if (!stripePromise) {
+      toast.error('Payment system is not properly configured');
+      return;
+    }
+
+    setProcessingPayment(true);
+    
+    try {
+      // Find the order
+      const order = orders.find(o => o.id === orderId);
+      if (!order || !order.order_items) {
+        throw new Error('Order details not found');
+      }
+
+      // Format cart items for the API
+      const cartItems = order.order_items.map(item => ({
+        product_id: item.product?.id,
+        quantity: item.quantity,
+        product: item.product
+      }));
+
+      // Create Stripe Checkout Session for the pending order
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-stripe-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cartItems,
+          userId: userProfile.id,
+          orderId // Pass the existing order ID
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+      
+      // Redirect to Stripe Checkout
+      const stripe = await stripePromise;
+      if (!stripe) {
+        throw new Error('Stripe failed to initialize');
+      }
+      
+      // Either redirect to the URL or use redirectToCheckout
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        const { error } = await stripe.redirectToCheckout({
+          sessionId: data.sessionId
+        });
+        
+        if (error) {
+          throw error;
+        }
+      }
+    } catch (error) {
+      console.error('Payment initiation error:', error);
+      toast.error('Failed to initiate payment. Please try again.');
+    } finally {
+      setProcessingPayment(false);
     }
   };
 
@@ -275,9 +353,21 @@ export function Orders() {
                 
                 <div>
                   <p className="text-sm font-medium text-gray-700 mb-1">Payment Status</p>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusColor(order.payment_status)}`}>
-                    {order.payment_status?.charAt(0).toUpperCase() + order.payment_status?.slice(1) || 'Unknown'}
-                  </span>
+                  <div className="flex items-center">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusColor(order.payment_status)}`}>
+                      {order.payment_status?.charAt(0).toUpperCase() + order.payment_status?.slice(1) || 'Unknown'}
+                    </span>
+                    
+                    {order.payment_status === 'pending' && (
+                      <button
+                        onClick={() => handlePayForOrder(order.id)}
+                        disabled={processingPayment}
+                        className="ml-2 inline-flex items-center px-2 py-1 rounded-md bg-[#FF0076] text-white text-xs hover:bg-[#FF0076]/90 transition-colors"
+                      >
+                        {processingPayment ? 'Processing...' : 'Pay Now'}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 
                 {order.tracking_number && (
@@ -300,6 +390,9 @@ export function Orders() {
                       month: 'long',
                       day: 'numeric'
                     })}
+                    {order.payment_status === 'pending' && (
+                      <span className="ml-1 text-amber-600">(awaiting payment)</span>
+                    )}
                   </p>
                 </div>
               )}
@@ -331,6 +424,25 @@ export function Orders() {
                         <span className="text-xs text-gray-600">+{order.order_items.length - 3} more</span>
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Banner for Pending Orders */}
+              {order.payment_status === 'pending' && (
+                <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 text-amber-600 mr-2 flex-shrink-0" />
+                    <p className="text-sm text-amber-700">
+                      Payment required to process this order. 
+                      <button 
+                        onClick={() => handlePayForOrder(order.id)}
+                        disabled={processingPayment}
+                        className="ml-2 font-medium underline hover:text-amber-800 transition-colors"
+                      >
+                        Complete payment now
+                      </button>
+                    </p>
                   </div>
                 </div>
               )}
@@ -383,6 +495,48 @@ export function Orders() {
                         {selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
                       </span>
                     </div>
+                  </div>
+                </div>
+
+                {/* Payment Information */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Payment Information</h3>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <CreditCard className="text-[#FF0076] w-5 h-5 mr-2 flex-shrink-0" />
+                        <p className="font-medium text-gray-700">Payment Status</p>
+                      </div>
+                      <div className="flex items-center">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(selectedOrder.payment_status)}`}>
+                          {selectedOrder.payment_status?.charAt(0).toUpperCase() + selectedOrder.payment_status?.slice(1) || 'Unknown'}
+                        </span>
+                        
+                        {selectedOrder.payment_status === 'pending' && (
+                          <button
+                            onClick={() => {
+                              setSelectedOrder(null);
+                              handlePayForOrder(selectedOrder.id);
+                            }}
+                            disabled={processingPayment}
+                            className="ml-2 text-[#FF0076] text-sm font-medium hover:underline"
+                          >
+                            Pay Now
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {selectedOrder.payment_status === 'pending' && (
+                      <div className="mt-3 bg-amber-50 rounded-md p-3">
+                        <div className="flex items-start">
+                          <AlertCircle className="w-5 h-5 text-amber-600 mr-2 flex-shrink-0 mt-0.5" />
+                          <p className="text-sm text-amber-700">
+                            Your order will be processed after payment is completed. Complete your payment to avoid order cancellation.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
