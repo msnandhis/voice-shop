@@ -19,11 +19,15 @@ import { Register } from './components/Register';
 import { ManageAddresses } from './components/ManageAddresses';
 import { PaymentSettings } from './components/PaymentSettings';
 import { VoiceInterface } from './components/VoiceInterface';
+import { Privacy } from './components/Privacy';
+import { TermsConditions } from './components/TermsConditions';
+import { RefundPolicy } from './components/RefundPolicy';
+import { FAQ } from './components/FAQ';
 import { useAuth } from './hooks/useAuth';
 import { Product } from './lib/supabase';
 import { voiceService } from './lib/voiceService';
 
-type View = 'home' | 'products' | 'product-detail' | 'cart' | 'checkout' | 'orders' | 'profile' | 'settings' | 'about' | 'contact' | 'deals' | 'whats-new' | 'login' | 'register' | 'manage-addresses' | 'payment-settings';
+type View = 'home' | 'products' | 'product-detail' | 'cart' | 'checkout' | 'orders' | 'profile' | 'settings' | 'about' | 'contact' | 'deals' | 'whats-new' | 'login' | 'register' | 'manage-addresses' | 'payment-settings' | 'privacy' | 'terms' | 'refund' | 'faq';
 
 function App() {
   const { user, loading } = useAuth();
@@ -33,11 +37,13 @@ function App() {
 
   const handleAuthClick = () => {
     setCurrentView('login');
+    window.scrollTo(0, 0);
   };
 
   const handleCartClick = () => {
     setCurrentView('cart');
     voiceService.updatePageContext('cart');
+    window.scrollTo(0, 0);
   };
 
   const handleLogoClick = () => {
@@ -45,6 +51,7 @@ function App() {
     setVoiceProducts([]);
     setVoiceCategory('');
     voiceService.updatePageContext('home');
+    window.scrollTo(0, 0);
   };
 
   const handleNavigation = (view: View) => {
@@ -52,12 +59,14 @@ function App() {
     setVoiceProducts([]);
     setVoiceCategory('');
     voiceService.updatePageContext(view);
+    window.scrollTo(0, 0);
   };
 
   const handleCheckout = () => {
     console.log('Navigating to checkout from cart');
     setCurrentView('checkout');
     voiceService.updatePageContext('checkout', true);
+    window.scrollTo(0, 0);
   };
 
   const handleCheckoutComplete = () => {
@@ -65,6 +74,7 @@ function App() {
     setVoiceProducts([]);
     setVoiceCategory('');
     voiceService.updatePageContext('home');
+    window.scrollTo(0, 0);
   };
 
   const handleVoiceCommand = (command: string, result: any) => {
@@ -75,23 +85,28 @@ function App() {
       setVoiceCategory(result.data.category || '');
       setCurrentView('products');
       voiceService.updatePageContext('products');
+      window.scrollTo(0, 0);
     } else if (result.intent === 'view_cart') {
       console.log('Voice command: Navigating to cart');
       setCurrentView('cart');
       voiceService.updatePageContext('cart');
+      window.scrollTo(0, 0);
     } else if (result.intent === 'goto_checkout' || result.intent === 'checkout') {
       console.log('Voice command: Navigating to checkout');
       setCurrentView('checkout');
       voiceService.updatePageContext('checkout', true);
+      window.scrollTo(0, 0);
     } else if (result.intent === 'browse_products') {
       // Handle category browsing
       setVoiceCategory(result.data?.category || '');
       setCurrentView('products');
       voiceService.updatePageContext('products');
+      window.scrollTo(0, 0);
     } else if (result.intent === 'go_home') {
       console.log('Voice command: Going home');
       setCurrentView('home');
       voiceService.updatePageContext('home');
+      window.scrollTo(0, 0);
     }
   };
 
@@ -105,42 +120,49 @@ function App() {
       setVoiceCategory(category);
       setCurrentView('products');
       voiceService.updatePageContext('products');
+      window.scrollTo(0, 0);
     };
     
     (window as any).handleViewCart = () => {
       console.log('Global function: View cart');
       setCurrentView('cart');
       voiceService.updatePageContext('cart');
+      window.scrollTo(0, 0);
     };
     
     (window as any).handleGotoCheckout = () => {
       console.log('Global function: Goto checkout');
       setCurrentView('checkout');
       voiceService.updatePageContext('checkout', true);
+      window.scrollTo(0, 0);
     };
 
     (window as any).handleViewOrders = () => {
       console.log('Global function: View orders');
       setCurrentView('orders');
       voiceService.updatePageContext('orders');
+      window.scrollTo(0, 0);
     };
 
     (window as any).handleViewProfile = () => {
       console.log('Global function: View profile');
       setCurrentView('profile');
       voiceService.updatePageContext('profile');
+      window.scrollTo(0, 0);
     };
 
     (window as any).handleViewSettings = () => {
       console.log('Global function: View settings');
       setCurrentView('settings');
       voiceService.updatePageContext('settings');
+      window.scrollTo(0, 0);
     };
 
     (window as any).handleGoHome = () => {
       console.log('Global function: Go home');
       setCurrentView('home');
       voiceService.updatePageContext('home');
+      window.scrollTo(0, 0);
     };
 
     return () => {
@@ -269,6 +291,22 @@ function App() {
             
             {currentView === 'payment-settings' && (
               <PaymentSettings />
+            )}
+
+            {currentView === 'privacy' && (
+              <Privacy />
+            )}
+            
+            {currentView === 'terms' && (
+              <TermsConditions />
+            )}
+            
+            {currentView === 'refund' && (
+              <RefundPolicy />
+            )}
+            
+            {currentView === 'faq' && (
+              <FAQ />
             )}
             
             <Footer onNavigation={handleNavigation} />

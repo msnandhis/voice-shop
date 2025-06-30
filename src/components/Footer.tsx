@@ -2,19 +2,23 @@ import React from 'react';
 import { Mic } from 'lucide-react';
 
 interface FooterProps {
-  onNavigation?: (view: 'home' | 'products' | 'cart' | 'checkout' | 'orders' | 'profile' | 'settings' | 'about' | 'contact' | 'deals' | 'whats-new' | 'login' | 'register') => void;
+  onNavigation?: (view: 'home' | 'products' | 'cart' | 'checkout' | 'orders' | 'profile' | 'settings' | 'about' | 'contact' | 'deals' | 'whats-new' | 'login' | 'register' | 'privacy' | 'terms' | 'refund' | 'faq') => void;
 }
 
 export function Footer({ onNavigation }: FooterProps) {
-  const handleNavClick = (view: 'about' | 'contact' | 'deals') => {
+  const handleNavClick = (view: 'about' | 'contact' | 'deals' | 'privacy' | 'terms' | 'refund' | 'faq') => {
     if (onNavigation) {
       onNavigation(view);
+      // Scroll to top when navigating to a new page
+      window.scrollTo(0, 0);
     }
   };
 
   const handleCategoryClick = (category: string) => {
     if (typeof window.handleBrowseProducts === 'function') {
       window.handleBrowseProducts(category);
+      // Scroll to top when navigating to a new page
+      window.scrollTo(0, 0);
     }
   };
 
@@ -52,28 +56,22 @@ export function Footer({ onNavigation }: FooterProps) {
             </ul>
           </div>
 
-          {/* Categories */}
+          {/* Customer Support */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 font-['Quicksand']">Categories</h3>
+            <h3 className="text-lg font-semibold mb-4 font-['Quicksand']">Customer Support</h3>
             <ul className="space-y-2">
-              <li><a href="#" onClick={(e) => { e.preventDefault(); handleCategoryClick('shoes'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Shoes</a></li>
-              <li><a href="#" onClick={(e) => { e.preventDefault(); handleCategoryClick('electronics'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Electronics</a></li>
-              <li><a href="#" onClick={(e) => { e.preventDefault(); handleCategoryClick('clothing'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Clothing</a></li>
-              <li><a href="#" onClick={(e) => { e.preventDefault(); handleCategoryClick('accessories'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Accessories</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('faq'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">FAQ</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('privacy'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Privacy Policy</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('terms'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Terms & Conditions</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('refund'); }} className="text-gray-300 hover:text-[#FF0076] transition-colors">Refund Policy</a></li>
             </ul>
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-8 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 text-sm">
-              © 2025 VoiceShop. All rights reserved.
-            </p>
-            <div className="flex items-center space-x-4 mt-4 md:mt-0">
-              <span className="text-gray-400 text-sm">Powered by</span>
-              <span className="text-[#FF0076] text-sm font-medium">ElevenLabs & Supabase</span>
-            </div>
-          </div>
+        <div className="border-t border-gray-800 mt-8 pt-8 flex justify-center">
+          <p className="text-gray-400 text-sm text-center">
+            © 2025 VoiceShop. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
