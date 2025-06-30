@@ -576,7 +576,7 @@ export function Checkout({ onBack, onComplete }: CheckoutProps) {
               <div>
                 <p className="font-medium">Order:</p>
                 <p>"Place order"</p>
-                <p>"Pay now"</p>
+                
               </div>
             </div>
           </div>
